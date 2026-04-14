@@ -1112,6 +1112,31 @@ footer {
 .admin-textarea { min-height: 100px; resize: vertical; }
 @media (max-width: 900px) { .admin-layout { grid-template-columns: 1fr; } }
 
+/* ── ARTIST DETAIL PANEL ── */
+.artist-detail-backdrop { position: fixed; inset: 0; background: rgba(8,12,26,.78); backdrop-filter: blur(6px); z-index: 500; opacity: 0; pointer-events: none; transition: opacity .25s; }
+.artist-detail-backdrop.open { opacity: 1; pointer-events: all; }
+.artist-detail-panel {
+  position: fixed; left: 50%; top: 50%; transform: translate(-50%, -45%) scale(.98);
+  width: min(920px, 92vw); max-height: 86vh; overflow-y: auto;
+  background: var(--bg-mid); border: 1px solid var(--border-glow); border-radius: 18px;
+  padding: 24px; z-index: 510; opacity: 0; pointer-events: none; transition: all .25s;
+}
+.artist-detail-panel.open { opacity: 1; pointer-events: all; transform: translate(-50%, -50%) scale(1); }
+.artist-detail-close {
+  position: absolute; right: 14px; top: 14px; width: 34px; height: 34px;
+  border: 1px solid var(--border); border-radius: 999px; background: transparent; color: var(--white-dim); cursor: pointer;
+}
+.artist-detail-name { font-family: var(--serif); font-size: 34px; margin-bottom: 8px; }
+.artist-detail-badge { display: inline-block; border: 1px solid var(--border-glow); border-radius: 999px; padding: 4px 12px; color: var(--blue-bright); font-size: 11px; margin-bottom: 14px; }
+.artist-detail-tags { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+.artist-detail-bio { color: var(--white-dim); line-height: 1.9; margin-bottom: 14px; }
+.artist-detail-sns { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 18px; }
+.artist-detail-sns a { border: 1px solid var(--border); border-radius: 999px; padding: 7px 12px; color: var(--white-dim); text-decoration: none; font-size: 12px; }
+.artist-detail-works { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.artist-detail-work { aspect-ratio: 1; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; background: var(--bg-card); }
+.artist-detail-work img { width: 100%; height: 100%; object-fit: cover; }
+.artist-detail-work-ph { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 28px; opacity: .5; }
+
 @media (max-width: 900px) {
   .artists { padding: 70px 20px; }
   .artists-grid { grid-template-columns: repeat(2, 1fr); gap: 16px; }
@@ -1355,7 +1380,7 @@ footer {
     <div class="artists-grid" id="artistsGridHome"></div>
 
     <div class="artists-cta">
-      <a href="?artists" class="btn-artists">모든 작가 보기 →</a>
+      <a href="#artists" class="btn-artists">모든 작가 보기 →</a>
     </div>
   </div>
 </section>
@@ -1413,6 +1438,18 @@ footer {
   </div>
 </footer>
 
+<!-- ARTIST DETAIL -->
+<div class="artist-detail-backdrop" id="artistDetailBackdrop" onclick="closeArtistPanel()"></div>
+<div class="artist-detail-panel" id="artistDetailPanel">
+  <button class="artist-detail-close" onclick="closeArtistPanel()">✕</button>
+  <div class="artist-detail-name" id="artistDetailName"></div>
+  <div class="artist-detail-badge" id="artistDetailBadge"></div>
+  <div class="artist-detail-tags" id="artistDetailTags"></div>
+  <div class="artist-detail-bio" id="artistDetailBio"></div>
+  <div class="artist-detail-sns" id="artistDetailSns"></div>
+  <div class="artist-detail-works" id="artistDetailWorks"></div>
+</div>
+
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js';
 import { getFirestore, doc, onSnapshot, setDoc } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js';
@@ -1430,7 +1467,6 @@ const db = getFirestore(app);
 const artistsRef = doc(db, 'standup_sites', 'standupp3_artists');
 const params = new URLSearchParams(location.search);
 const isAdmin = params.has('admin');
-const artistsView = params.has('artists');
 const ARTISTS_CACHE_KEY = 'standupp3_artists_cache';
 let artists = [];
 let selectedAdminIdx = -1;
@@ -1448,8 +1484,8 @@ function getCardDesc(artist) {
 function renderHomeArtists() {
   const grid = document.getElementById('artistsGridHome');
   if (!grid) return;
-  grid.innerHTML = artists.map((artist) => `
-    <div class="artist-card">
+  grid.innerHTML = artists.map((artist, idx) => `
+    <div class="artist-card" onclick="openArtistPanel(${idx})">
       <div class="artist-img-wrap">
         <div class="artist-img-placeholder"><span class="artist-placeholder-icon">${artist.icon || '🎨'}</span></div>
         <div class="artist-badge">${artist.badge || '작가'}</div>
@@ -1461,6 +1497,32 @@ function renderHomeArtists() {
       </div>
     </div>
   `).join('');
+}
+
+function openArtistPanel(idx) {
+  const a = artists[idx];
+  if (!a) return;
+
+  document.getElementById('artistDetailName').textContent = a.name || '작가명';
+  document.getElementById('artistDetailBadge').textContent = a.badge || '작가';
+  document.getElementById('artistDetailTags').innerHTML = (a.tags || []).map((t) => `<span class="tag">${t}</span>`).join('');
+  document.getElementById('artistDetailBio').innerHTML = String(a.bio || '').replace(/\n/g, '<br>');
+  document.getElementById('artistDetailSns').innerHTML = (a.sns || []).map((s) => `<a href="${s.url || '#'}" target="_blank" rel="noopener">${s.label || 'SNS'}</a>`).join('');
+  document.getElementById('artistDetailWorks').innerHTML = (a.works || []).slice(0, 6).map((w, i) =>
+    w
+      ? `<div class="artist-detail-work"><img src="${w}" alt="작품 ${i + 1}"></div>`
+      : `<div class="artist-detail-work"><div class="artist-detail-work-ph">${(a.workIcons && a.workIcons[i]) || '🖼'}</div></div>`
+  ).join('');
+
+  document.getElementById('artistDetailBackdrop').classList.add('open');
+  document.getElementById('artistDetailPanel').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeArtistPanel() {
+  document.getElementById('artistDetailBackdrop').classList.remove('open');
+  document.getElementById('artistDetailPanel').classList.remove('open');
+  document.body.style.overflow = isAdmin ? '' : '';
 }
 
 function cacheArtists(items) {
@@ -1564,6 +1626,8 @@ window.adminSelectArtist = adminSelectArtist;
 window.adminAddArtist = adminAddArtist;
 window.adminSaveArtist = adminSaveArtist;
 window.adminDeleteArtist = adminDeleteArtist;
+window.openArtistPanel = openArtistPanel;
+window.closeArtistPanel = closeArtistPanel;
 
 if (isAdmin) document.body.classList.add('admin-mode');
 
@@ -1586,12 +1650,9 @@ onSnapshot(artistsRef, (snap) => {
   renderHomeArtists();
 });
 
-if (artistsView && !isAdmin) {
-  setTimeout(() => {
-    const section = document.getElementById('artists');
-    if (section) section.scrollIntoView({ behavior: 'smooth' });
-  }, 80);
-}
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeArtistPanel();
+});
 </script>
 </body>
 </html>
