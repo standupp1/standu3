@@ -1355,7 +1355,7 @@ footer {
     <div class="artists-grid" id="artistsGridHome"></div>
 
     <div class="artists-cta">
-      <a href="#artists" class="btn-artists">모든 작가 보기 →</a>
+      <a href="?artists" class="btn-artists">모든 작가 보기 →</a>
     </div>
   </div>
 </section>
@@ -1428,7 +1428,10 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const artistsRef = doc(db, 'standup_sites', 'standupp3_artists');
-const isAdmin = new URLSearchParams(location.search).has('admin');
+const params = new URLSearchParams(location.search);
+const isAdmin = params.has('admin');
+const artistsView = params.has('artists');
+const ARTISTS_CACHE_KEY = 'standupp3_artists_cache';
 let artists = [];
 let selectedAdminIdx = -1;
 
@@ -1458,6 +1461,25 @@ function renderHomeArtists() {
       </div>
     </div>
   `).join('');
+}
+
+function cacheArtists(items) {
+  try {
+    localStorage.setItem(ARTISTS_CACHE_KEY, JSON.stringify(items));
+  } catch (e) {
+    // ignore cache errors
+  }
+}
+
+function getCachedArtists() {
+  try {
+    const raw = localStorage.getItem(ARTISTS_CACHE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (e) {
+    return [];
+  }
 }
 
 function renderAdminList() {
@@ -1512,10 +1534,15 @@ async function adminSaveArtist() {
   if (!Array.isArray(t.sns)) t.sns = [{ label: '𝕏 Twitter', url: '#' }];
   if (!Array.isArray(t.works)) t.works = [null, null, null, null, null, null];
   if (!Array.isArray(t.workIcons)) t.workIcons = ['🖼', '✨', '🌟', '🎨', '💫', '🌙'];
-  await setDoc(artistsRef, { items: artists }, { merge: true });
-  renderHomeArtists();
-  renderAdminList();
-  alert('저장 완료');
+  try {
+    await setDoc(artistsRef, { items: artists }, { merge: true });
+    cacheArtists(artists);
+    renderHomeArtists();
+    renderAdminList();
+    alert('저장 완료: 고객 화면에 반영됩니다.');
+  } catch (e) {
+    alert('저장 실패: Firestore 권한(규칙) 또는 연결 상태를 확인해주세요.');
+  }
 }
 
 async function adminDeleteArtist() {
@@ -1523,9 +1550,14 @@ async function adminDeleteArtist() {
   if (!confirm('선택한 작가를 삭제할까요?')) return;
   artists.splice(selectedAdminIdx, 1);
   selectedAdminIdx = -1;
-  await setDoc(artistsRef, { items: artists }, { merge: true });
-  renderHomeArtists();
-  renderAdminList();
+  try {
+    await setDoc(artistsRef, { items: artists }, { merge: true });
+    cacheArtists(artists);
+    renderHomeArtists();
+    renderAdminList();
+  } catch (e) {
+    alert('삭제 저장 실패: Firestore 권한(규칙) 또는 연결 상태를 확인해주세요.');
+  }
 }
 
 window.adminSelectArtist = adminSelectArtist;
@@ -1539,15 +1571,27 @@ onSnapshot(artistsRef, (snap) => {
   if (snap.exists()) {
     const data = snap.data();
     artists = Array.isArray(data.items) ? data.items : [];
+    cacheArtists(artists);
   } else {
-    artists = [];
+    const cached = getCachedArtists();
+    artists = cached;
   }
   renderHomeArtists();
   if (isAdmin) {
     renderAdminList();
     if (selectedAdminIdx < 0 && artists.length) adminSelectArtist(0);
   }
+}, () => {
+  artists = getCachedArtists();
+  renderHomeArtists();
 });
+
+if (artistsView && !isAdmin) {
+  setTimeout(() => {
+    const section = document.getElementById('artists');
+    if (section) section.scrollIntoView({ behavior: 'smooth' });
+  }, 80);
+}
 </script>
 </body>
 </html>
