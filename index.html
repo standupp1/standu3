@@ -77,6 +77,27 @@ body::before {
   text-shadow: 0 0 12px rgba(122,174,255,0.5);
 }
 
+.menu-btn {
+  background: none;
+  border: 1px solid var(--border-glow);
+  border-radius: 6px;
+  padding: 8px 18px;
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--blue-bright);
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.menu-btn:hover {
+  background: rgba(122,174,255,0.1);
+  box-shadow: 0 0 12px rgba(122,174,255,0.2);
+}
+
 
 
 
@@ -138,6 +159,8 @@ body::before {
   max-width: 80vw;
   filter: drop-shadow(0 0 24px rgba(122,174,255,0.35));
   animation: floatLogo 4s ease-in-out infinite;
+  mix-blend-mode: screen;
+  background: transparent;
 }
 
 @keyframes floatLogo {

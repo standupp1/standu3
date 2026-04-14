@@ -107,6 +107,24 @@ textarea { min-height: 80px; resize: vertical; }
           <textarea id="sns" placeholder="𝕏 Twitter|https://twitter.com/yourname&#10;📷 Instagram|https://instagram.com/yourname&#10;P Pixiv|https://pixiv.net/users/yourname"></textarea>
           <p class="hint" style="margin-top:4px;">예시: 𝕏 Twitter|https://twitter.com/... (레이블|URL)</p>
         </div>
+        <div class="full">
+          <label>프로필 이미지 (대표 캐릭터)</label>
+          <div style="display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap;">
+            <div style="flex:1;min-width:200px;">
+              <input id="characterImg" type="text" placeholder="이미지 URL 직접 입력" style="margin-bottom:8px;">
+              <label style="display:flex;align-items:center;gap:8px;cursor:pointer;background:rgba(74,128,232,0.15);border:1px solid var(--border);border-radius:10px;padding:10px 14px;transition:all 0.2s;" onmouseover="this.style.background='rgba(74,128,232,0.25)'" onmouseout="this.style.background='rgba(74,128,232,0.15)'">
+                <span style="font-size:18px;">📁</span>
+                <span style="font-size:13px;color:var(--blue-bright);font-weight:700;">파일에서 업로드</span>
+                <input type="file" accept="image/*" style="display:none" onchange="handleProfileUpload(event)">
+              </label>
+              <p class="hint">PNG·JPG·GIF·WEBP 지원 · 투명 배경 PNG 권장</p>
+            </div>
+            <div id="profilePreviewWrap" style="display:none;flex-shrink:0;">
+              <img id="profilePreview" style="width:120px;height:120px;object-fit:cover;border-radius:12px;border:1px solid var(--border);" alt="프로필 미리보기">
+              <button type="button" onclick="clearProfile()" style="display:block;width:100%;margin-top:6px;padding:5px;font-size:11px;border-radius:8px;">✕ 제거</button>
+            </div>
+          </div>
+        </div>
       </div>
       <div class="works-editor">
         <div class="works-title">대표 작품 이미지 (최대 6개)</div>
@@ -202,6 +220,28 @@ function selectArtist(idx) {
   document.getElementById('cardDesc').value = a.cardDesc || '';
   document.getElementById('tags').value = (a.tags || []).join(', ');
   document.getElementById('bio').value = a.bio || '';
+  // 프로필 이미지 불러오기
+  const charFld = document.getElementById('characterImg');
+  if (charFld) charFld.value = a.characterImg || '';
+  const profileWrap = document.getElementById('profilePreviewWrap');
+  const profileImg = document.getElementById('profilePreview');
+  if (a.characterImg) {
+    if (profileImg) profileImg.src = a.characterImg;
+    if (profileWrap) profileWrap.style.display = '';
+  } else {
+    if (profileWrap) profileWrap.style.display = 'none';
+  }
+  // 프로필 이미지
+  const charImgField = document.getElementById('characterImg');
+  if (charImgField) charImgField.value = a.characterImg || '';
+  const profileWrap = document.getElementById('profilePreviewWrap');
+  const profilePreview = document.getElementById('profilePreview');
+  if (a.characterImg) {
+    if (profilePreview) profilePreview.src = a.characterImg;
+    if (profileWrap) profileWrap.style.display = '';
+  } else {
+    if (profileWrap) profileWrap.style.display = 'none';
+  }
   // SNS 불러오기
   const snsField = document.getElementById('sns');
   if (snsField) {
@@ -220,16 +260,48 @@ function renderWorksEditor(artist) {
 
   editor.innerHTML = works.map((url, i) => {
     const safeUrl = url || '';
+    const hasImg = Boolean(safeUrl);
     return `
-      <div class="work-box">
-        <label>작품 ${i + 1} 이미지 URL</label>
-        <input id="workUrl${i}" type="text" value="${safeUrl}" placeholder="https://... 또는 비워두기">
-        <label style="margin-top:8px;">파일 업로드</label>
-        <input id="workFile${i}" type="file" accept="image/*" onchange="handleWorkFileChange(${i}, event)">
-        <img id="workPreview${i}" class="work-preview" src="${safeUrl || ''}" alt="작품 ${i + 1} 미리보기" style="${safeUrl ? '' : 'display:none;'}">
+      <div class="work-box" style="position:relative;">
+        <div style="font-size:11px;color:var(--blue-bright);font-weight:700;margin-bottom:8px;">작품 ${i + 1}</div>
+        <div style="position:relative;width:100%;aspect-ratio:1;border-radius:10px;overflow:hidden;background:#0b1428;border:1px solid var(--border);cursor:pointer;display:flex;align-items:center;justify-content:center;" onclick="document.getElementById('workFile${i}').click()">
+          ${hasImg
+            ? `<img id="workPreview${i}" src="${safeUrl}" style="width:100%;height:100%;object-fit:cover;" alt="작품 ${i+1}">`
+            : `<div id="workPreview${i}" style="display:flex;flex-direction:column;align-items:center;gap:6px;opacity:0.5;pointer-events:none;">
+                <span style="font-size:28px;">📁</span>
+                <span style="font-size:10px;color:var(--blue-bright);">클릭하여 업로드</span>
+               </div>`
+          }
+        </div>
+        <input id="workFile${i}" type="file" accept="image/*" style="display:none" onchange="handleWorkFileChange(${i}, event)">
+        <input id="workUrl${i}" type="text" value="${safeUrl}" placeholder="또는 URL 직접 입력" style="margin-top:8px;font-size:11px;" oninput="updateWorkPreviewFromUrl(${i}, this.value)">
+        ${hasImg ? `<button type="button" onclick="clearWork(${i})" style="margin-top:6px;width:100%;padding:5px;font-size:11px;border-radius:8px;color:#ffb6b6;border-color:rgba(255,120,120,0.45);">✕ 제거</button>` : ''}
       </div>
     `;
   }).join('');
+}
+
+function updateWorkPreviewFromUrl(i, val) {
+  const preview = document.getElementById('workPreview' + i);
+  if (!preview) return;
+  if (val && val.startsWith('http')) {
+    if (preview.tagName === 'IMG') {
+      preview.src = val;
+    } else {
+      preview.outerHTML = '<img id="workPreview' + i + '" src="' + val + '" style="width:100%;height:100%;object-fit:cover;" alt="작품' + (i+1) + '">';
+    }
+  }
+}
+
+function clearWork(i) {
+  const input = document.getElementById('workUrl' + i);
+  if (input) input.value = '';
+  if (artists[selectedIndex]) {
+    const works = [...(artists[selectedIndex].works || [])];
+    works[i] = null;
+    artists[selectedIndex].works = works;
+    renderWorksEditor(artists[selectedIndex]);
+  }
 }
 
 function handleWorkFileChange(idx, event) {
@@ -289,6 +361,9 @@ async function saveArtist() {
       return { label: (parts[0] || '').trim(), url: (parts[1] || '#').trim() };
     }).filter(s => s.label);
   }
+  // 프로필 이미지 저장
+  const charImgVal = document.getElementById('characterImg');
+  if (charImgVal) target.characterImg = charImgVal.value.trim() || null;
   if (!Array.isArray(target.sns) || !target.sns.length) target.sns = [{ label: '𝕏 Twitter', url: '#' }];
   target.works = Array.from({ length: 6 }, (_, i) => {
     const input = document.getElementById(`workUrl${i}`);
