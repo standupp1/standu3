@@ -41,9 +41,9 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; display:flex; justify
 .page-desc { font-size:15px; color:var(--white-dim); font-weight:300; line-height:1.8; max-width:480px; margin:0 auto 40px; }
 
 /* FILTER */
-.filter-bar { display:flex; justify-content:center; gap:10px; flex-wrap:wrap; margin-bottom:56px; }
-.filter-btn { background:transparent; border:1px solid var(--border); border-radius:100px; padding:8px 20px; font-size:12px; font-weight:500; letter-spacing:.05em; color:var(--white-dim); cursor:pointer; font-family:var(--sans); transition:all .2s; }
-.filter-btn:hover, .filter-btn.active { border-color:var(--blue-bright); color:var(--blue-bright); background:rgba(122,174,255,.08); }
+
+
+
 
 /* GRID */
 .artists-section { position:relative; z-index:1; padding:0 60px 120px; }
@@ -182,7 +182,7 @@ body.admin-mode .detail-panel { display:none; }
 @media (max-width:480px) {
   .artists-grid { grid-template-columns:repeat(2,1fr); gap:10px; }
   .works-grid { grid-template-columns:repeat(2,1fr); }
-  .filter-btn { padding:6px 14px; font-size:11px; }
+  
   .panel-sns { gap:7px; }
 }
 @keyframes fadeIn { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
@@ -359,15 +359,7 @@ function closePanel() {
   document.body.style.overflow = '';
 }
 
-function filterArtists(genre, btn) {
-  closePanel();
-  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  document.querySelectorAll('.artist-card').forEach(card => {
-    const g = card.dataset.genre || '';
-    card.style.display = (genre === 'all' || g.includes(genre)) ? '' : 'none';
-  });
-}
+
 
 function renderAdminList() {
   const list = document.getElementById('adminList');
@@ -461,7 +453,6 @@ async function adminDeleteArtist() {
 // module 스코프 함수들을 inline onclick에서 접근 가능하게 연결
 window.openPanel = openPanel;
 window.closePanel = closePanel;
-window.filterArtists = filterArtists;
 window.adminSelectArtist = adminSelectArtist;
 window.adminAddArtist = adminAddArtist;
 window.adminSaveArtist = adminSaveArtist;

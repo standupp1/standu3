@@ -42,7 +42,8 @@ input, textarea {
   width: 100%; border: 1px solid var(--border); border-radius: 12px; background: #0b1428;
   color: var(--white); padding: 10px 12px; font-family: var(--sans);
 }
-textarea { min-height: 100px; resize: vertical; }
+textarea { min-height: 80px; resize: vertical; }
+#sns { min-height: 80px; font-size: 12px; }
 .hint { margin-top: 10px; font-size: 12px; color: var(--dim); }
 .works-editor { margin-top: 14px; }
 .works-title { font-size: 13px; color: var(--blue-bright); margin-bottom: 8px; }
@@ -100,6 +101,11 @@ textarea { min-height: 100px; resize: vertical; }
         <div class="full">
           <label>상세 소개 (줄바꿈 가능)</label>
           <textarea id="bio"></textarea>
+        </div>
+        <div class="full">
+          <label>SNS 링크 (최대 3개 · 형식: 레이블|URL, 줄바꿈으로 구분)</label>
+          <textarea id="sns" placeholder="𝕏 Twitter|https://twitter.com/yourname&#10;📷 Instagram|https://instagram.com/yourname&#10;P Pixiv|https://pixiv.net/users/yourname"></textarea>
+          <p class="hint" style="margin-top:4px;">예시: 𝕏 Twitter|https://twitter.com/... (레이블|URL)</p>
         </div>
       </div>
       <div class="works-editor">
@@ -196,6 +202,13 @@ function selectArtist(idx) {
   document.getElementById('cardDesc').value = a.cardDesc || '';
   document.getElementById('tags').value = (a.tags || []).join(', ');
   document.getElementById('bio').value = a.bio || '';
+  // SNS 불러오기
+  const snsField = document.getElementById('sns');
+  if (snsField) {
+    snsField.value = Array.isArray(a.sns)
+      ? a.sns.map(s => `${s.label}|${s.url}`).join('\n')
+      : '';
+  }
   renderWorksEditor(a);
   renderList();
 }
@@ -268,6 +281,14 @@ async function saveArtist() {
   target.cardDesc = document.getElementById('cardDesc').value.trim() || '작가 소개 문구입니다.';
   target.tags = document.getElementById('tags').value.split(',').map(v => v.trim()).filter(Boolean);
   target.bio = document.getElementById('bio').value.trim() || '작가 상세 소개를 입력해주세요.';
+  // SNS 파싱 (레이블|URL 형식)
+  const snsRaw = document.getElementById('sns').value.trim();
+  if (snsRaw) {
+    target.sns = snsRaw.split('\n').map(line => {
+      const parts = line.split('|');
+      return { label: (parts[0] || '').trim(), url: (parts[1] || '#').trim() };
+    }).filter(s => s.label);
+  }
   if (!Array.isArray(target.sns) || !target.sns.length) target.sns = [{ label: '𝕏 Twitter', url: '#' }];
   target.works = Array.from({ length: 6 }, (_, i) => {
     const input = document.getElementById(`workUrl${i}`);
