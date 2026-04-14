@@ -115,10 +115,35 @@ footer { position:relative; z-index:1; background:var(--bg-mid); border-top:1px 
 .footer-logo { font-family:var(--serif); font-size:16px; letter-spacing:.2em; color:var(--blue-bright); }
 .footer-copy { font-size:11px; color:var(--white-faint); }
 
+/* ADMIN MODE */
+.admin-page { display:none; position:relative; z-index:1; padding:120px 60px 60px; }
+body.admin-mode .admin-page { display:block; }
+body.admin-mode .page-hero,
+body.admin-mode .artists-section,
+body.admin-mode footer,
+body.admin-mode .detail-backdrop,
+body.admin-mode .detail-panel { display:none; }
+.admin-wrap { max-width:1100px; margin:0 auto; }
+.admin-title { font-family:var(--serif); font-size:34px; margin-bottom:8px; }
+.admin-sub { color:var(--white-dim); margin-bottom:16px; }
+.admin-toolbar { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px; }
+.admin-layout { display:grid; grid-template-columns:320px 1fr; gap:14px; }
+.admin-panel { background:var(--bg-card); border:1px solid var(--border); border-radius:16px; padding:12px; }
+.admin-list { display:flex; flex-direction:column; gap:8px; max-height:70vh; overflow-y:auto; }
+.admin-item { border:1px solid var(--border); border-radius:10px; padding:10px; cursor:pointer; background:var(--bg-card2); }
+.admin-item.active { border-color:var(--border-glow); }
+.admin-form-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.admin-full { grid-column:1 / -1; }
+.admin-label { font-size:12px; color:var(--white-dim); margin-bottom:4px; display:block; }
+.admin-input, .admin-textarea { width:100%; background:var(--bg-deep); border:1px solid var(--border); border-radius:10px; color:var(--white); padding:10px 12px; font-family:var(--sans); }
+.admin-textarea { min-height:100px; resize:vertical; }
+
 /* RESPONSIVE */
 @media (max-width:1100px) { .artists-grid { grid-template-columns:repeat(3,1fr); } }
 @media (max-width:900px) {
   nav { padding:16px 20px; }
+  .admin-page { padding:100px 20px 40px; }
+  .admin-layout { grid-template-columns:1fr; }
   .page-hero { padding:110px 20px 48px; }
   .artists-section { padding:0 20px 80px; }
   .artists-grid { grid-template-columns:repeat(2,1fr); gap:14px; }
@@ -145,6 +170,32 @@ footer { position:relative; z-index:1; background:var(--bg-mid); border-top:1px 
   <a href="index.html" class="nav-logo">STAND UP</a>
   <a href="index.html" class="nav-back">← 홈으로</a>
 </nav>
+
+<section class="admin-page" id="adminPage">
+  <div class="admin-wrap">
+    <h1 class="admin-title">작가 관리 페이지</h1>
+    <p class="admin-sub">`?admin` 전용 화면입니다. 저장하면 고객 화면에 즉시 반영됩니다.</p>
+    <div class="admin-toolbar">
+      <a href="artists.html" class="nav-back">고객 화면 보기</a>
+      <button class="nav-back" type="button" onclick="adminAddArtist()">새 작가 추가</button>
+      <button class="nav-back" type="button" onclick="adminSaveArtist()">저장</button>
+      <button class="nav-back" type="button" onclick="adminDeleteArtist()">선택 삭제</button>
+    </div>
+    <div class="admin-layout">
+      <div class="admin-panel"><div id="adminList" class="admin-list"></div></div>
+      <div class="admin-panel">
+        <div class="admin-form-grid">
+          <div><label class="admin-label">작가명</label><input class="admin-input" id="aName"></div>
+          <div><label class="admin-label">배지</label><input class="admin-input" id="aBadge"></div>
+          <div><label class="admin-label">아이콘</label><input class="admin-input" id="aIcon"></div>
+          <div><label class="admin-label">카드 소개</label><input class="admin-input" id="aCardDesc"></div>
+          <div class="admin-full"><label class="admin-label">태그 (쉼표 구분)</label><input class="admin-input" id="aTags"></div>
+          <div class="admin-full"><label class="admin-label">상세 소개</label><textarea class="admin-textarea" id="aBio"></textarea></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
 
 <div class="page-hero">
   <div class="page-eyebrow">STAND UP ARTISTS</div>
@@ -194,9 +245,11 @@ footer { position:relative; z-index:1; background:var(--bg-mid); border-top:1px 
 
 <script type="module">
 import { firebaseApp, firebaseReady, artistsDocPath } from './firebase-config.js';
-import { getFirestore, doc, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js';
+import { getFirestore, doc, onSnapshot, setDoc } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js';
 
 let artists = [];
+let selectedAdminIdx = -1;
+const isAdmin = new URLSearchParams(location.search).has('admin');
 
 function getCardDesc(artist) {
   if (artist.cardDesc && artist.cardDesc.trim()) return artist.cardDesc.trim();
@@ -278,10 +331,83 @@ function filterArtists(genre, btn) {
   });
 }
 
+function renderAdminList() {
+  const list = document.getElementById('adminList');
+  if (!list) return;
+  list.innerHTML = artists.map((a, idx) => `
+    <div class="admin-item ${idx === selectedAdminIdx ? 'active' : ''}" onclick="adminSelectArtist(${idx})">
+      <div>${a.icon || '🎨'} ${a.name || '작가명'}</div>
+      <div style="font-size:12px;color:var(--white-dim);">${a.badge || ''}</div>
+    </div>
+  `).join('');
+}
+
+function adminSelectArtist(idx) {
+  selectedAdminIdx = idx;
+  const a = artists[idx];
+  if (!a) return;
+  document.getElementById('aName').value = a.name || '';
+  document.getElementById('aBadge').value = a.badge || '';
+  document.getElementById('aIcon').value = a.icon || '';
+  document.getElementById('aCardDesc').value = a.cardDesc || '';
+  document.getElementById('aTags').value = (a.tags || []).join(', ');
+  document.getElementById('aBio').value = a.bio || '';
+  renderAdminList();
+}
+
+function adminAddArtist() {
+  artists.push({
+    name: '새 작가',
+    badge: '일러스트',
+    icon: '🎨',
+    cardDesc: '작가 소개를 입력해주세요.',
+    tags: ['신규'],
+    bio: '상세 소개를 입력해주세요.',
+    sns: [{ label: '𝕏 Twitter', url: '#' }],
+    characterImg: null,
+    works: [null, null, null, null, null, null],
+    workIcons: ['🖼', '✨', '🌟', '🎨', '💫', '🌙'],
+  });
+  adminSelectArtist(artists.length - 1);
+  renderArtists();
+}
+
+async function adminSaveArtist() {
+  if (selectedAdminIdx < 0 || !artists[selectedAdminIdx]) return;
+  const t = artists[selectedAdminIdx];
+  t.name = document.getElementById('aName').value.trim() || '작가명';
+  t.badge = document.getElementById('aBadge').value.trim() || '작가';
+  t.icon = document.getElementById('aIcon').value.trim() || '🎨';
+  t.cardDesc = document.getElementById('aCardDesc').value.trim() || '작가 소개 문구입니다.';
+  t.tags = document.getElementById('aTags').value.split(',').map(v => v.trim()).filter(Boolean);
+  t.bio = document.getElementById('aBio').value.trim() || '';
+  if (!Array.isArray(t.sns)) t.sns = [{ label: '𝕏 Twitter', url: '#' }];
+  if (!Array.isArray(t.works)) t.works = [null, null, null, null, null, null];
+  if (!Array.isArray(t.workIcons)) t.workIcons = ['🖼', '✨', '🌟', '🎨', '💫', '🌙'];
+  await setDoc(doc(getFirestore(firebaseApp), artistsDocPath.collection, artistsDocPath.document), { items: artists }, { merge: true });
+  renderArtists();
+  renderAdminList();
+  alert('저장 완료');
+}
+
+async function adminDeleteArtist() {
+  if (selectedAdminIdx < 0 || !artists[selectedAdminIdx]) return;
+  if (!confirm('선택한 작가를 삭제할까요?')) return;
+  artists.splice(selectedAdminIdx, 1);
+  selectedAdminIdx = -1;
+  await setDoc(doc(getFirestore(firebaseApp), artistsDocPath.collection, artistsDocPath.document), { items: artists }, { merge: true });
+  renderArtists();
+  renderAdminList();
+}
+
 // module 스코프 함수들을 inline onclick에서 접근 가능하게 연결
 window.openPanel = openPanel;
 window.closePanel = closePanel;
 window.filterArtists = filterArtists;
+window.adminSelectArtist = adminSelectArtist;
+window.adminAddArtist = adminAddArtist;
+window.adminSaveArtist = adminSaveArtist;
+window.adminDeleteArtist = adminDeleteArtist;
 
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closePanel(); });
 
@@ -295,9 +421,14 @@ async function loadJsonFallback() {
     artists = [];
   }
   renderArtists();
+  if (isAdmin) {
+    renderAdminList();
+    if (selectedAdminIdx < 0 && artists.length) adminSelectArtist(0);
+  }
 }
 
 async function boot() {
+  if (isAdmin) document.body.classList.add('admin-mode');
   if (!firebaseReady || !firebaseApp) {
     await loadJsonFallback();
     return;
@@ -314,6 +445,10 @@ async function boot() {
           const data = snapshot.data();
           artists = Array.isArray(data.items) ? data.items : [];
           renderArtists();
+          if (isAdmin) {
+            renderAdminList();
+            if (selectedAdminIdx < 0 && artists.length) adminSelectArtist(0);
+          }
           return;
         }
         await loadJsonFallback();
