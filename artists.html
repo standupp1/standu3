@@ -62,7 +62,7 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; display:flex; justify
 .artist-badge { position:absolute; top:10px; left:10px; background:rgba(10,20,50,.85); backdrop-filter:blur(8px); border:1px solid var(--border-glow); border-radius:6px; padding:4px 10px; font-size:10px; font-weight:700; letter-spacing:.1em; color:var(--blue-bright); }
 .artist-info { padding:18px 16px; }
 .artist-name { font-size:15px; font-weight:700; color:var(--white); margin-bottom:5px; }
-.artist-desc { font-size:11px; color:var(--white-dim); line-height:1.7; margin-bottom:10px; font-weight:300; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.artist-desc { font-size:11px; color:var(--white-dim); line-height:1.7; margin-bottom:10px; font-weight:300; display:-webkit-box; line-clamp:2; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
 .artist-tags { display:flex; gap:5px; flex-wrap:wrap; }
 .tag { background:rgba(74,128,232,.1); border:1px solid var(--border); border-radius:100px; padding:2px 9px; font-size:10px; color:var(--blue-bright); font-weight:500; }
 .artist-card.recruiting { border-style:dashed; border-color:rgba(74,128,232,.3); cursor:default; }
@@ -153,40 +153,7 @@ footer { position:relative; z-index:1; background:var(--bg-mid); border-top:1px 
   </div>
 
 <section class="artists-section">
-  <div class="artists-grid" id="artistsGrid">
-    <div class="artist-card" data-idx="0" data-genre="일러스트 팬아트" onclick="openPanel(0)">
-      <div class="artist-img-wrap"><div class="artist-img-placeholder">🎨</div><div class="artist-badge">일러스트</div></div>
-      <div class="artist-info"><div class="artist-name">작가명</div><div class="artist-desc">따뜻한 색감과 섬세한 선으로 캐릭터를 표현합니다.</div><div class="artist-tags"><span class="tag">캐릭터</span><span class="tag">팬아트</span></div></div>
-    </div>
-    <div class="artist-card" data-idx="1" data-genre="만화" onclick="openPanel(1)">
-      <div class="artist-img-wrap"><div class="artist-img-placeholder">✏️</div><div class="artist-badge">만화</div></div>
-      <div class="artist-info"><div class="artist-name">작가명</div><div class="artist-desc">감성적인 스토리와 개성 있는 그림체가 특징입니다.</div><div class="artist-tags"><span class="tag">오리지널</span><span class="tag">BL</span></div></div>
-    </div>
-    <div class="artist-card" data-idx="2" data-genre="굿즈 일러스트" onclick="openPanel(2)">
-      <div class="artist-img-wrap"><div class="artist-img-placeholder">🖌️</div><div class="artist-badge">굿즈</div></div>
-      <div class="artist-info"><div class="artist-name">작가명</div><div class="artist-desc">판타지 세계관의 소녀들을 화사하게 그려냅니다.</div><div class="artist-tags"><span class="tag">소녀</span><span class="tag">판타지</span></div></div>
-    </div>
-    <div class="artist-card" data-idx="3" data-genre="팬아트" onclick="openPanel(3)">
-      <div class="artist-img-wrap"><div class="artist-img-placeholder">⭐</div><div class="artist-badge">팬아트</div></div>
-      <div class="artist-info"><div class="artist-name">작가명</div><div class="artist-desc">게임·애니 캐릭터를 생동감 있게 재해석합니다.</div><div class="artist-tags"><span class="tag">게임</span><span class="tag">애니</span></div></div>
-    </div>
-    <div class="artist-card" data-idx="4" data-genre="일러스트 굿즈" onclick="openPanel(4)">
-      <div class="artist-img-wrap"><div class="artist-img-placeholder">🌸</div><div class="artist-badge">일러스트</div></div>
-      <div class="artist-info"><div class="artist-name">작가명</div><div class="artist-desc">동물과 자연을 담은 치유 계열 일러스트 작가입니다.</div><div class="artist-tags"><span class="tag">치유</span><span class="tag">동물</span></div></div>
-    </div>
-    <div class="artist-card" data-idx="5" data-genre="만화 굿즈" onclick="openPanel(5)">
-      <div class="artist-img-wrap"><div class="artist-img-placeholder">🎭</div><div class="artist-badge">만화</div></div>
-      <div class="artist-info"><div class="artist-name">작가명</div><div class="artist-desc">감정선이 섬세한 GL·로맨스 만화를 그립니다.</div><div class="artist-tags"><span class="tag">GL</span><span class="tag">로맨스</span></div></div>
-    </div>
-    <div class="artist-card" data-idx="6" data-genre="팬아트 일러스트" onclick="openPanel(6)">
-      <div class="artist-img-wrap"><div class="artist-img-placeholder">💫</div><div class="artist-badge">팬아트</div></div>
-      <div class="artist-info"><div class="artist-name">작가명</div><div class="artist-desc">VTuber·아이돌 팬아트로 팬들과 소통합니다.</div><div class="artist-tags"><span class="tag">VTuber</span><span class="tag">아이돌</span></div></div>
-    </div>
-    <div class="artist-card recruiting" data-genre="all">
-      <div class="artist-img-wrap"><div class="artist-img-placeholder">✦</div></div>
-      <div class="recruit-text"><span class="recruit-icon">✦</span><div class="recruit-title">작가 모집 중</div><div class="recruit-sub">함께하고 싶은 작가님,<br>언제든 문의해주세요!</div></div>
-    </div>
-  </div>
+  <div class="artists-grid" id="artistsGrid"></div>
 </section>
 
 <footer>
@@ -225,82 +192,45 @@ footer { position:relative; z-index:1; background:var(--bg-mid); border-top:1px 
   </div>
 </div>
 
-<script>
-// ── 작가 데이터 ──
-// 실제 작가 정보로 교체하세요!
-// characterImg: 대표 캐릭터 이미지 URL (null이면 아이콘 표시)
-// works: 작품 이미지 URL 배열 (null이면 플레이스홀더)
-const artists = [
-  {
-    name: '작가명', badge: '일러스트', icon: '🎨',
-    tags: ['캐릭터', '팬아트', '일러스트'],
-    bio: '따뜻한 색감과 섬세한 선으로 캐릭터를 표현하는 일러스트 작가입니다.\n\nSNS를 중심으로 활발히 활동하며, 굿즈 제작 경험도 다수 보유하고 있습니다.',
-    sns: [{ label: '𝕏 Twitter', url: '#' },{ label: '📷 Instagram', url: '#' },{ label: 'P Pixiv', url: '#' }],
-    characterImg: null,
-    works: [null, null, null, null, null, null],
-    workIcons: ['🌟','✨','💖','🎀','🌙','🎵'],
-  },
-  {
-    name: '작가명', badge: '만화', icon: '✏️',
-    tags: ['오리지널', 'BL', '만화'],
-    bio: '감성적인 스토리와 개성 있는 그림체가 특징인 만화 작가입니다.\n\n오리지널 BL 작품을 중심으로 활동하며 팬층을 꾸준히 넓혀가고 있습니다.',
-    sns: [{ label: '𝕏 Twitter', url: '#' },{ label: 'P Pixiv', url: '#' }],
-    characterImg: null,
-    works: [null, null, null, null, null, null],
-    workIcons: ['📖','✏️','💜','🖊','📝','🌸'],
-  },
-  {
-    name: '작가명', badge: '굿즈', icon: '🖌️',
-    tags: ['소녀', '판타지', '굿즈'],
-    bio: '판타지 세계관의 소녀들을 화사하게 그려내는 작가입니다.\n\n아크릴 키링, 포스터 등 다양한 굿즈 제작 경험을 보유하고 있습니다.',
-    sns: [{ label: '𝕏 Twitter', url: '#' },{ label: '📷 Instagram', url: '#' }],
-    characterImg: null,
-    works: [null, null, null, null, null, null],
-    workIcons: ['🌺','🦋','💎','🌙','⭐','🌈'],
-  },
-  {
-    name: '작가명', badge: '팬아트', icon: '⭐',
-    tags: ['게임', '애니', '팬아트'],
-    bio: '게임·애니 캐릭터를 생동감 있게 재해석하는 팬아트 작가입니다.\n\n원작의 감성을 살리면서도 개성 있는 스타일로 많은 팬들의 사랑을 받고 있습니다.',
-    sns: [{ label: '𝕏 Twitter', url: '#' },{ label: 'P Pixiv', url: '#' }],
-    characterImg: null,
-    works: [null, null, null, null, null, null],
-    workIcons: ['⚔️','🎮','🌟','💥','🗡️','🛡️'],
-  },
-  {
-    name: '작가명', badge: '일러스트', icon: '🌸',
-    tags: ['치유', '동물', '일러스트'],
-    bio: '동물과 자연을 담은 치유 계열 일러스트 작가입니다.\n\n보는 것만으로 힐링이 되는 따뜻한 그림들로 팬들에게 위로를 전합니다.',
-    sns: [{ label: '𝕏 Twitter', url: '#' },{ label: '📷 Instagram', url: '#' },{ label: 'P Pixiv', url: '#' }],
-    characterImg: null,
-    works: [null, null, null, null, null, null],
-    workIcons: ['🐱','🌿','🌼','🦊','🍃','☁️'],
-  },
-  {
-    name: '작가명', badge: '만화', icon: '🎭',
-    tags: ['GL', '로맨스', '만화'],
-    bio: '감정선이 섬세한 GL·로맨스 만화를 그리는 작가입니다.\n\n두 사람 사이의 미묘한 감정을 포착하는 연출력이 강점입니다.',
-    sns: [{ label: '𝕏 Twitter', url: '#' }],
-    characterImg: null,
-    works: [null, null, null, null, null, null],
-    workIcons: ['💗','🌷','🌙','💞','🎀','🍓'],
-  },
-  {
-    name: '작가명', badge: '팬아트', icon: '💫',
-    tags: ['VTuber', '아이돌', '팬아트'],
-    bio: 'VTuber·아이돌 팬아트로 팬들과 활발히 소통하는 작가입니다.\n\n최신 트렌드에 민감하게 반응하며 다양한 팬덤에서 사랑받고 있습니다.',
-    sns: [{ label: '𝕏 Twitter', url: '#' },{ label: '📷 Instagram', url: '#' }],
-    characterImg: null,
-    works: [null, null, null, null, null, null],
-    workIcons: ['🌟','🎤','💖','✨','🎶','🌙'],
-  },
-];
+<script type="module">
+import { firebaseApp, firebaseReady, artistsDocPath } from './firebase-config.js';
+import { getFirestore, doc, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js';
+
+let artists = [];
+
+function getCardDesc(artist) {
+  if (artist.cardDesc && artist.cardDesc.trim()) return artist.cardDesc.trim();
+  return (artist.bio || '').split('\n')[0] || '작가 소개 문구입니다.';
+}
+
+function renderArtists() {
+  const grid = document.getElementById('artistsGrid');
+  const cards = artists.map((artist, idx) => {
+    const cardDesc = getCardDesc(artist);
+    const tags = (artist.tags || []).slice(0, 2).map(tag => `<span class="tag">${tag}</span>`).join('');
+    const genre = (artist.tags || []).join(' ');
+
+    return `<div class="artist-card" data-idx="${idx}" data-genre="${genre}" onclick="openPanel(${idx})">
+      <div class="artist-img-wrap"><div class="artist-img-placeholder">${artist.icon || '🎨'}</div><div class="artist-badge">${artist.badge || '작가'}</div></div>
+      <div class="artist-info"><div class="artist-name">${artist.name || '작가명'}</div><div class="artist-desc">${cardDesc}</div><div class="artist-tags">${tags}</div></div>
+    </div>`;
+  }).join('');
+
+  const recruit = `<div class="artist-card recruiting" data-genre="all">
+      <div class="artist-img-wrap"><div class="artist-img-placeholder">✦</div></div>
+      <div class="recruit-text"><span class="recruit-icon">✦</span><div class="recruit-title">작가 모집 중</div><div class="recruit-sub">함께하고 싶은 작가님,<br>언제든 문의해주세요!</div></div>
+    </div>`;
+
+  grid.innerHTML = cards + recruit;
+}
 
 function openPanel(idx) {
+  const artist = artists[idx];
+  if (!artist) return;
   document.querySelectorAll('.artist-card[data-idx]').forEach(c => c.classList.remove('active'));
   document.querySelector(`.artist-card[data-idx="${idx}"]`).classList.add('active');
 
-  const a = artists[idx];
+  const a = artist;
 
   // 왼쪽
   const ci = document.getElementById('panelCharIcon');
@@ -349,6 +279,50 @@ function filterArtists(genre, btn) {
 }
 
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closePanel(); });
+
+async function loadJsonFallback() {
+  try {
+    const response = await fetch('artists-data.json', { cache: 'no-store' });
+    if (!response.ok) throw new Error('failed to fetch artists-data.json');
+    const data = await response.json();
+    artists = Array.isArray(data) ? data : [];
+  } catch (e) {
+    artists = [];
+  }
+  renderArtists();
+}
+
+async function boot() {
+  if (!firebaseReady || !firebaseApp) {
+    await loadJsonFallback();
+    return;
+  }
+
+  try {
+    const db = getFirestore(firebaseApp);
+    const artistsRef = doc(db, artistsDocPath.collection, artistsDocPath.document);
+
+    onSnapshot(
+      artistsRef,
+      async (snapshot) => {
+        if (snapshot.exists()) {
+          const data = snapshot.data();
+          artists = Array.isArray(data.items) ? data.items : [];
+          renderArtists();
+          return;
+        }
+        await loadJsonFallback();
+      },
+      async () => {
+        await loadJsonFallback();
+      }
+    );
+  } catch (e) {
+    await loadJsonFallback();
+  }
+}
+
+boot();
 </script>
 </body>
 </html>

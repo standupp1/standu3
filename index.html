@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>STAND UP | 서브컬처 매니지먼트</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Noto+Serif+KR:wght@300;400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -24,7 +24,7 @@
   --spark:      #c8dcff;
   --border:     rgba(74,128,232,0.2);
   --border-glow:rgba(122,174,255,0.4);
-  --sans: 'Noto Sans KR', sans-serif;
+  --sans: 'Gowun Dodum', 'Noto Sans KR', sans-serif;
   --serif: 'Noto Serif KR', serif;
 }
 
@@ -56,7 +56,7 @@ body::before {
 }
 
 /* ── NAV ── */
-nav {
+.main-nav {
   position: fixed;
   top: 0;
   left: 0;
@@ -80,7 +80,7 @@ nav {
 .menu-btn {
   background: none;
   border: 1px solid var(--border-glow);
-  border-radius: 4px;
+  border-radius: 999px;
   padding: 8px 18px;
   font-family: var(--sans);
   font-size: 11px;
@@ -139,7 +139,9 @@ nav {
 
 .menu-close {
   background: none;
-  border: none;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 6px 12px;
   font-family: var(--sans);
   font-size: 12px;
   font-weight: 700;
@@ -150,7 +152,7 @@ nav {
 }
 .menu-close:hover { color: var(--blue-bright); }
 
-.menu-items { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+.menu-items { flex: 1; display: flex; flex-direction: column; justify-content: flex-start; padding-top: 10px; }
 
 .menu-item {
   display: flex;
@@ -253,7 +255,7 @@ nav {
   align-items: center;
   gap: 8px;
   border: 1px solid var(--border-glow);
-  border-radius: 100px;
+  border-radius: 999px;
   padding: 6px 18px;
   font-size: 10px;
   font-weight: 700;
@@ -336,7 +338,7 @@ nav {
   font-weight: 700;
   letter-spacing: 0.1em;
   cursor: pointer;
-  border-radius: 6px;
+  border-radius: 999px;
   transition: all 0.25s;
   box-shadow: 0 0 20px rgba(74,128,232,0.3);
 }
@@ -357,7 +359,7 @@ nav {
   font-weight: 500;
   letter-spacing: 0.1em;
   cursor: pointer;
-  border-radius: 6px;
+  border-radius: 999px;
   transition: all 0.25s;
 }
 
@@ -443,7 +445,7 @@ nav {
   gap: 1px;
   background: var(--border);
   border: 1px solid var(--border);
-  border-radius: 16px;
+  border-radius: 24px;
   overflow: hidden;
 }
 
@@ -543,7 +545,7 @@ nav {
   display: inline-block;
   background: rgba(74,128,232,0.15);
   border: 1px solid var(--border-glow);
-  border-radius: 4px;
+  border-radius: 999px;
   padding: 4px 12px;
   font-size: 10px;
   font-weight: 700;
@@ -578,8 +580,6 @@ nav {
   grid-template-columns: 1fr 1fr;
   gap: 16px;
 }
-
-.about-info-item {}
 
 .info-label {
   font-size: 9px;
@@ -623,8 +623,6 @@ nav {
   margin-top: 4px;
 }
 
-.about-text {}
-
 .about-headline { font-family: 'Noto Serif KR', serif; letter-spacing: -0.01em; 
   font-size: clamp(26px, 3vw, 40px);
   font-weight: 900;
@@ -656,7 +654,7 @@ nav {
 .stat-box {
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 16px;
   padding: 20px 16px;
   text-align: center;
   transition: border-color 0.2s;
@@ -748,7 +746,7 @@ nav {
   padding: 13px 16px;
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 14px;
   font-family: var(--sans);
   font-size: 13px;
   color: var(--white);
@@ -771,7 +769,7 @@ textarea.form-input { height: 110px; resize: none; }
   color: var(--white);
   border: none;
   padding: 16px;
-  border-radius: 8px;
+  border-radius: 999px;
   font-family: var(--sans);
   font-size: 13px;
   font-weight: 700;
@@ -846,7 +844,7 @@ footer {
 
 /* responsive */
 @media (max-width: 900px) {
-  nav { padding: 16px 20px; }
+  .main-nav { padding: 16px 20px; }
   .nav-logo { font-family: 'Noto Serif KR', serif; letter-spacing: -0.01em;  font-size: 12px; }
   .menu-btn { padding: 6px 14px; font-size: 10px; }
 
@@ -878,6 +876,7 @@ footer {
   .footer-links { justify-content: center; }
 
   .menu-overlay { padding: 28px 32px 40px; }
+  .menu-items { justify-content: flex-start; padding-top: 8px; }
   .menu-label { font-family: 'Noto Serif KR', serif; letter-spacing: -0.01em;  font-size: clamp(32px, 8vw, 56px); }
   .menu-social-links { gap: 16px; }
 }
@@ -915,6 +914,7 @@ footer {
   .footer-copy { font-size: 10px; }
 
   .menu-overlay { padding: 24px 24px 36px; }
+  .menu-items { justify-content: flex-start; }
   .menu-label { font-family: 'Noto Serif KR', serif; letter-spacing: -0.01em;  font-size: clamp(28px, 9vw, 48px); }
   .menu-top-logo { font-size: 12px; }
 }
@@ -948,7 +948,7 @@ footer {
 .artist-card {
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: 18px;
+  border-radius: 24px;
   overflow: hidden;
   transition: all 0.3s;
   cursor: pointer;
@@ -988,7 +988,7 @@ footer {
   top: 12px; left: 12px;
   background: rgba(74,128,232,0.85);
   backdrop-filter: blur(8px);
-  border-radius: 6px;
+  border-radius: 999px;
   padding: 4px 10px;
   font-size: 10px;
   font-weight: 700;
@@ -1039,7 +1039,7 @@ footer {
   justify-content: center;
   width: 30px; height: 30px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 12px;
   font-size: 12px;
   color: var(--white-dim);
   text-decoration: none;
@@ -1057,7 +1057,7 @@ footer {
 .btn-artists {
   display: inline-block;
   border: 1px solid var(--border-glow);
-  border-radius: 6px;
+  border-radius: 999px;
   padding: 14px 40px;
   font-size: 13px;
   font-weight: 700;
@@ -1086,7 +1086,7 @@ footer {
 <body>
 
 <!-- NAV -->
-<nav>
+<nav class="main-nav">
   <div class="nav-logo">STAND UP</div>
   <button class="menu-btn" onclick="toggleMenu()">메뉴 ✦</button>
 </nav>
