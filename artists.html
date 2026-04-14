@@ -137,6 +137,30 @@ body.admin-mode .detail-panel { display:none; }
 .admin-label { font-size:12px; color:var(--white-dim); margin-bottom:4px; display:block; }
 .admin-input, .admin-textarea { width:100%; background:var(--bg-deep); border:1px solid var(--border); border-radius:10px; color:var(--white); padding:10px 12px; font-family:var(--sans); }
 .admin-textarea { min-height:100px; resize:vertical; }
+.admin-toolbar .nav-back,
+.admin-toolbar button.nav-back {
+  background: transparent;
+  color: var(--white-dim);
+  border: 1px solid var(--border-glow);
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-family: var(--sans);
+  cursor: pointer;
+}
+.admin-toolbar .nav-back:hover,
+.admin-toolbar button.nav-back:hover {
+  color: var(--blue-bright);
+  background: rgba(122,174,255,.08);
+}
+.admin-upload-wrap { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+.admin-preview {
+  width: 90px;
+  height: 90px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  object-fit: cover;
+  background: var(--bg-card2);
+}
 
 /* RESPONSIVE */
 @media (max-width:1100px) { .artists-grid { grid-template-columns:repeat(3,1fr); } }
@@ -189,6 +213,17 @@ body.admin-mode .detail-panel { display:none; }
           <div><label class="admin-label">배지</label><input class="admin-input" id="aBadge"></div>
           <div><label class="admin-label">아이콘</label><input class="admin-input" id="aIcon"></div>
           <div><label class="admin-label">카드 소개</label><input class="admin-input" id="aCardDesc"></div>
+          <div class="admin-full">
+            <label class="admin-label">프로필 이미지 URL</label>
+            <input class="admin-input" id="aCharacterImg" placeholder="https://...">
+          </div>
+          <div class="admin-full">
+            <label class="admin-label">프로필 이미지 파일 업로드</label>
+            <div class="admin-upload-wrap">
+              <input class="admin-input" id="aCharacterFile" type="file" accept="image/*" onchange="adminUploadCharacterImage(event)" style="max-width:320px;">
+              <img id="aCharacterPreview" class="admin-preview" alt="프로필 미리보기">
+            </div>
+          </div>
           <div class="admin-full"><label class="admin-label">태그 (쉼표 구분)</label><input class="admin-input" id="aTags"></div>
           <div class="admin-full"><label class="admin-label">상세 소개</label><textarea class="admin-textarea" id="aBio"></textarea></div>
         </div>
@@ -263,8 +298,11 @@ function renderArtists() {
     const tags = (artist.tags || []).slice(0, 2).map(tag => `<span class="tag">${tag}</span>`).join('');
     const genre = (artist.tags || []).join(' ');
 
+    const cover = artist.characterImg
+      ? `<img src="${artist.characterImg}" alt="${artist.name || '작가'}">`
+      : `<div class="artist-img-placeholder">${artist.icon || '🎨'}</div>`;
     return `<div class="artist-card" data-idx="${idx}" data-genre="${genre}" onclick="openPanel(${idx})">
-      <div class="artist-img-wrap"><div class="artist-img-placeholder">${artist.icon || '🎨'}</div><div class="artist-badge">${artist.badge || '작가'}</div></div>
+      <div class="artist-img-wrap">${cover}<div class="artist-badge">${artist.badge || '작가'}</div></div>
       <div class="artist-info"><div class="artist-name">${artist.name || '작가명'}</div><div class="artist-desc">${cardDesc}</div><div class="artist-tags">${tags}</div></div>
     </div>`;
   }).join('');
@@ -350,9 +388,28 @@ function adminSelectArtist(idx) {
   document.getElementById('aBadge').value = a.badge || '';
   document.getElementById('aIcon').value = a.icon || '';
   document.getElementById('aCardDesc').value = a.cardDesc || '';
+  document.getElementById('aCharacterImg').value = a.characterImg || '';
+  const preview = document.getElementById('aCharacterPreview');
+  preview.src = a.characterImg || '';
+  preview.style.display = a.characterImg ? '' : 'none';
   document.getElementById('aTags').value = (a.tags || []).join(', ');
   document.getElementById('aBio').value = a.bio || '';
   renderAdminList();
+}
+
+function adminUploadCharacterImage(event) {
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const dataUrl = e.target && e.target.result ? String(e.target.result) : '';
+    if (!dataUrl) return;
+    document.getElementById('aCharacterImg').value = dataUrl;
+    const preview = document.getElementById('aCharacterPreview');
+    preview.src = dataUrl;
+    preview.style.display = '';
+  };
+  reader.readAsDataURL(file);
 }
 
 function adminAddArtist() {
@@ -379,6 +436,7 @@ async function adminSaveArtist() {
   t.badge = document.getElementById('aBadge').value.trim() || '작가';
   t.icon = document.getElementById('aIcon').value.trim() || '🎨';
   t.cardDesc = document.getElementById('aCardDesc').value.trim() || '작가 소개 문구입니다.';
+  t.characterImg = document.getElementById('aCharacterImg').value.trim() || null;
   t.tags = document.getElementById('aTags').value.split(',').map(v => v.trim()).filter(Boolean);
   t.bio = document.getElementById('aBio').value.trim() || '';
   if (!Array.isArray(t.sns)) t.sns = [{ label: '𝕏 Twitter', url: '#' }];
@@ -408,6 +466,7 @@ window.adminSelectArtist = adminSelectArtist;
 window.adminAddArtist = adminAddArtist;
 window.adminSaveArtist = adminSaveArtist;
 window.adminDeleteArtist = adminDeleteArtist;
+window.adminUploadCharacterImage = adminUploadCharacterImage;
 
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closePanel(); });
 
