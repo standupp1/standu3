@@ -1072,6 +1072,46 @@ footer {
   box-shadow: 0 0 20px rgba(122,174,255,0.15);
 }
 
+/* ── ADMIN MODE ── */
+.admin-page {
+  display: none;
+  min-height: 100vh;
+  padding: 100px 20px 40px;
+  position: relative;
+  z-index: 2;
+}
+.admin-mode .admin-page { display: block; }
+.admin-mode .hero,
+.admin-mode .services,
+.admin-mode .about,
+.admin-mode .artists,
+.admin-mode .contact,
+.admin-mode footer,
+.admin-mode .scroll-hint { display: none; }
+.admin-wrap { max-width: 1100px; margin: 0 auto; }
+.admin-title { font-family: var(--serif); font-size: 34px; margin-bottom: 8px; }
+.admin-sub { color: var(--white-dim); margin-bottom: 18px; }
+.admin-toolbar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+.admin-layout { display: grid; grid-template-columns: 320px 1fr; gap: 14px; }
+.admin-panel { background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 12px; }
+.admin-list { display: flex; flex-direction: column; gap: 8px; max-height: 70vh; overflow-y: auto; }
+.admin-item { border: 1px solid var(--border); border-radius: 10px; padding: 10px; cursor: pointer; background: var(--bg-card2); }
+.admin-item.active { border-color: var(--border-glow); }
+.admin-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.admin-full { grid-column: 1 / -1; }
+.admin-label { font-size: 12px; color: var(--white-dim); margin-bottom: 4px; display: block; }
+.admin-input, .admin-textarea {
+  width: 100%;
+  background: var(--bg-deep);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--white);
+  padding: 10px 12px;
+  font-family: var(--sans);
+}
+.admin-textarea { min-height: 100px; resize: vertical; }
+@media (max-width: 900px) { .admin-layout { grid-template-columns: 1fr; } }
+
 @media (max-width: 900px) {
   .artists { padding: 70px 20px; }
   .artists-grid { grid-template-columns: repeat(2, 1fr); gap: 16px; }
@@ -1107,7 +1147,7 @@ footer {
     <a href="#about" class="menu-item" onclick="toggleMenu()">
       <span class="menu-num">03</span><span class="menu-label">소개</span>
     </a>
-    <a href="artists.html" class="menu-item">
+    <a href="#artists" class="menu-item" onclick="toggleMenu()">
       <span class="menu-num">04</span><span class="menu-label">작가</span>
     </a>
     <a href="#contact" class="menu-item" onclick="toggleMenu()">
@@ -1126,6 +1166,33 @@ footer {
     <div class="menu-tagline">작가님 곁에서 든든하게.</div>
   </div>
 </div>
+
+<!-- ADMIN PAGE -->
+<section class="admin-page" id="adminPage">
+  <div class="admin-wrap">
+    <h1 class="admin-title">작가 관리 페이지</h1>
+    <p class="admin-sub">`?admin` 전용 화면입니다. 저장하면 Firebase에 즉시 반영됩니다.</p>
+    <div class="admin-toolbar">
+      <button class="btn-glow" onclick="adminAddArtist()">새 작가 추가</button>
+      <button class="btn-outline" onclick="adminSaveArtist()">저장</button>
+      <button class="btn-outline" onclick="adminDeleteArtist()">선택 삭제</button>
+      <button class="btn-outline" onclick="location.href=location.pathname">고객 화면 보기</button>
+    </div>
+    <div class="admin-layout">
+      <div class="admin-panel"><div id="adminList" class="admin-list"></div></div>
+      <div class="admin-panel">
+        <div class="admin-form-grid">
+          <div><label class="admin-label">작가명</label><input class="admin-input" id="aName"></div>
+          <div><label class="admin-label">배지</label><input class="admin-input" id="aBadge"></div>
+          <div><label class="admin-label">아이콘</label><input class="admin-input" id="aIcon"></div>
+          <div><label class="admin-label">카드 소개</label><input class="admin-input" id="aCardDesc"></div>
+          <div class="admin-full"><label class="admin-label">태그 (쉼표 구분)</label><input class="admin-input" id="aTags"></div>
+          <div class="admin-full"><label class="admin-label">상세 소개</label><textarea class="admin-textarea" id="aBio"></textarea></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
 
 <!-- HERO -->
 <section class="hero" id="hero">
@@ -1285,72 +1352,10 @@ footer {
     <h2 class="section-title">함께하는 작가님들<span class="accent">.</span></h2>
     <div class="section-line"></div>
 
-    <div class="artists-grid">
-      <div class="artist-card">
-        <div class="artist-img-wrap">
-          <div class="artist-img-placeholder">
-            <span class="artist-placeholder-icon">🎨</span>
-          </div>
-          <div class="artist-badge">일러스트</div>
-        </div>
-        <div class="artist-info">
-          <div class="artist-name">작가명</div>
-          <div class="artist-desc">작가 소개 한 줄이 여기에 들어갑니다.</div>
-          <div class="artist-tags">
-            <span class="tag">캐릭터</span>
-            <span class="tag">팬아트</span>
-          </div>
-          <div class="artist-sns">
-            <a href="#" class="sns-btn">𝕏</a>
-            <a href="#" class="sns-btn">📷</a>
-            <a href="#" class="sns-btn">P</a>
-          </div>
-        </div>
-      </div>
-      <div class="artist-card">
-        <div class="artist-img-wrap">
-          <div class="artist-img-placeholder">
-            <span class="artist-placeholder-icon">✏️</span>
-          </div>
-          <div class="artist-badge">만화</div>
-        </div>
-        <div class="artist-info">
-          <div class="artist-name">작가명</div>
-          <div class="artist-desc">작가 소개 한 줄이 여기에 들어갑니다.</div>
-          <div class="artist-tags">
-            <span class="tag">오리지널</span>
-            <span class="tag">BL</span>
-          </div>
-          <div class="artist-sns">
-            <a href="#" class="sns-btn">𝕏</a>
-            <a href="#" class="sns-btn">P</a>
-          </div>
-        </div>
-      </div>
-      <div class="artist-card">
-        <div class="artist-img-wrap">
-          <div class="artist-img-placeholder">
-            <span class="artist-placeholder-icon">🖌️</span>
-          </div>
-          <div class="artist-badge">굿즈</div>
-        </div>
-        <div class="artist-info">
-          <div class="artist-name">작가명</div>
-          <div class="artist-desc">작가 소개 한 줄이 여기에 들어갑니다.</div>
-          <div class="artist-tags">
-            <span class="tag">소녀</span>
-            <span class="tag">판타지</span>
-          </div>
-          <div class="artist-sns">
-            <a href="#" class="sns-btn">𝕏</a>
-            <a href="#" class="sns-btn">📷</a>
-          </div>
-        </div>
-      </div>
-    </div>
+    <div class="artists-grid" id="artistsGridHome"></div>
 
     <div class="artists-cta">
-      <a href="artists.html" class="btn-artists">모든 작가 보기 →</a>
+      <a href="#artists" class="btn-artists">모든 작가 보기 →</a>
     </div>
   </div>
 </section>
@@ -1408,10 +1413,141 @@ footer {
   </div>
 </footer>
 
-<script>
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js';
+import { getFirestore, doc, onSnapshot, setDoc } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDd85t65S0F5sZSsiYCwQMSnmw0Jt3HlEg",
+  authDomain: "standupp-7cfeb.firebaseapp.com",
+  projectId: "standupp-7cfeb",
+  storageBucket: "standupp-7cfeb.firebasestorage.app",
+  messagingSenderId: "390358747706",
+  appId: "1:390358747706:web:aaec773c9d95397ea78303",
+};
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const artistsRef = doc(db, 'standup_sites', 'standupp3_artists');
+const isAdmin = new URLSearchParams(location.search).has('admin');
+let artists = [];
+let selectedAdminIdx = -1;
+
 function toggleMenu() {
   document.getElementById('menuOverlay').classList.toggle('open');
 }
+window.toggleMenu = toggleMenu;
+
+function getCardDesc(artist) {
+  if (artist.cardDesc && artist.cardDesc.trim()) return artist.cardDesc;
+  return (artist.bio || '').split('\n')[0] || '작가 소개 문구입니다.';
+}
+
+function renderHomeArtists() {
+  const grid = document.getElementById('artistsGridHome');
+  if (!grid) return;
+  grid.innerHTML = artists.map((artist) => `
+    <div class="artist-card">
+      <div class="artist-img-wrap">
+        <div class="artist-img-placeholder"><span class="artist-placeholder-icon">${artist.icon || '🎨'}</span></div>
+        <div class="artist-badge">${artist.badge || '작가'}</div>
+      </div>
+      <div class="artist-info">
+        <div class="artist-name">${artist.name || '작가명'}</div>
+        <div class="artist-desc">${getCardDesc(artist)}</div>
+        <div class="artist-tags">${(artist.tags || []).slice(0,2).map((t)=>`<span class="tag">${t}</span>`).join('')}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderAdminList() {
+  const list = document.getElementById('adminList');
+  if (!list) return;
+  list.innerHTML = artists.map((a, idx) => `
+    <div class="admin-item ${idx === selectedAdminIdx ? 'active' : ''}" onclick="adminSelectArtist(${idx})">
+      <div>${a.icon || '🎨'} ${a.name || '작가명'}</div>
+      <div style="font-size:12px;color:var(--white-dim);">${a.badge || ''}</div>
+    </div>
+  `).join('');
+}
+
+function adminSelectArtist(idx) {
+  selectedAdminIdx = idx;
+  const a = artists[idx];
+  if (!a) return;
+  document.getElementById('aName').value = a.name || '';
+  document.getElementById('aBadge').value = a.badge || '';
+  document.getElementById('aIcon').value = a.icon || '';
+  document.getElementById('aCardDesc').value = a.cardDesc || '';
+  document.getElementById('aTags').value = (a.tags || []).join(', ');
+  document.getElementById('aBio').value = a.bio || '';
+  renderAdminList();
+}
+
+function adminAddArtist() {
+  artists.push({
+    name: '새 작가',
+    badge: '일러스트',
+    icon: '🎨',
+    cardDesc: '작가 소개를 입력해주세요.',
+    tags: ['신규'],
+    bio: '상세 소개를 입력해주세요.',
+    sns: [{ label: '𝕏 Twitter', url: '#' }],
+    works: [null, null, null, null, null, null],
+    workIcons: ['🖼', '✨', '🌟', '🎨', '💫', '🌙'],
+  });
+  adminSelectArtist(artists.length - 1);
+  renderHomeArtists();
+}
+
+async function adminSaveArtist() {
+  if (selectedAdminIdx < 0 || !artists[selectedAdminIdx]) return;
+  const t = artists[selectedAdminIdx];
+  t.name = document.getElementById('aName').value.trim() || '작가명';
+  t.badge = document.getElementById('aBadge').value.trim() || '작가';
+  t.icon = document.getElementById('aIcon').value.trim() || '🎨';
+  t.cardDesc = document.getElementById('aCardDesc').value.trim() || '작가 소개 문구입니다.';
+  t.tags = document.getElementById('aTags').value.split(',').map(v => v.trim()).filter(Boolean);
+  t.bio = document.getElementById('aBio').value.trim() || '';
+  if (!Array.isArray(t.sns)) t.sns = [{ label: '𝕏 Twitter', url: '#' }];
+  if (!Array.isArray(t.works)) t.works = [null, null, null, null, null, null];
+  if (!Array.isArray(t.workIcons)) t.workIcons = ['🖼', '✨', '🌟', '🎨', '💫', '🌙'];
+  await setDoc(artistsRef, { items: artists }, { merge: true });
+  renderHomeArtists();
+  renderAdminList();
+  alert('저장 완료');
+}
+
+async function adminDeleteArtist() {
+  if (selectedAdminIdx < 0 || !artists[selectedAdminIdx]) return;
+  if (!confirm('선택한 작가를 삭제할까요?')) return;
+  artists.splice(selectedAdminIdx, 1);
+  selectedAdminIdx = -1;
+  await setDoc(artistsRef, { items: artists }, { merge: true });
+  renderHomeArtists();
+  renderAdminList();
+}
+
+window.adminSelectArtist = adminSelectArtist;
+window.adminAddArtist = adminAddArtist;
+window.adminSaveArtist = adminSaveArtist;
+window.adminDeleteArtist = adminDeleteArtist;
+
+if (isAdmin) document.body.classList.add('admin-mode');
+
+onSnapshot(artistsRef, (snap) => {
+  if (snap.exists()) {
+    const data = snap.data();
+    artists = Array.isArray(data.items) ? data.items : [];
+  } else {
+    artists = [];
+  }
+  renderHomeArtists();
+  if (isAdmin) {
+    renderAdminList();
+    if (selectedAdminIdx < 0 && artists.length) adminSelectArtist(0);
+  }
+});
 </script>
 </body>
 </html>
