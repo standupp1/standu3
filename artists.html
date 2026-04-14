@@ -95,7 +95,7 @@ body.page-loaded .page-hero > *:nth-child(3) { animation-delay: .28s; }
 .detail-backdrop { position:fixed; inset:0; background:rgba(8,12,26,.75); backdrop-filter:blur(8px); z-index:300; opacity:0; pointer-events:none; transition:opacity .35s; }
 .detail-backdrop.open { opacity:1; pointer-events:all; }
 
-.detail-panel { position:fixed; bottom:0; left:0; right:0; z-index:400; height:86vh; background:var(--bg-mid); border-top:1px solid var(--border-glow); border-radius:24px 24px 0 0; display:grid; grid-template-columns:400px 1fr; overflow:hidden; transform:translateY(100%); transition:transform .45s cubic-bezier(.32,.72,0,1); }
+.detail-panel { position:fixed; bottom:0; left:0; right:0; z-index:400; height:100vh; background:var(--bg-mid); border-top:1px solid var(--border-glow); border-radius:0; display:grid; grid-template-columns:400px 1fr; overflow:hidden; transform:translateY(100%); transition:transform .45s cubic-bezier(.32,.72,0,1); }
 .detail-panel.open { transform:translateY(0); }
 
 /* 패널 왼쪽 */
@@ -191,7 +191,7 @@ body.admin-mode .detail-panel { display:none; }
   .page-hero { padding:110px 20px 48px; }
   .artists-section { padding:0 20px 80px; }
   .artists-grid { grid-template-columns:repeat(2,1fr); gap:14px; }
-  .detail-panel { grid-template-columns:1fr; grid-template-rows:38% 1fr; height:92vh; }
+  .detail-panel { grid-template-columns:1fr; grid-template-rows:38% 1fr; height:100vh; }
   .panel-left { border-right:none; border-bottom:1px solid var(--border); padding:16px 24px 20px; flex-direction:row; justify-content:center; gap:20px; align-items:center; }
   .panel-char-icon { font-size:60px; margin-bottom:0; }
   .panel-left-name { font-size:18px; }
