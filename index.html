@@ -159,7 +159,7 @@ body::before {
   max-width: 80vw;
   filter: drop-shadow(0 0 24px rgba(122,174,255,0.35));
   animation: floatLogo 4s ease-in-out infinite;
-  mix-blend-mode: screen;
+  mix-blend-mode: normal;
   background: transparent;
 }
 
@@ -990,6 +990,40 @@ footer {
   font-family: var(--sans);
 }
 .admin-textarea { min-height: 100px; resize: vertical; }
+.admin-upload-wrap { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.admin-preview {
+  width: 90px;
+  height: 90px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  object-fit: cover;
+  background: var(--bg-card2);
+}
+.admin-works-title { margin-top: 10px; margin-bottom: 8px; color: var(--blue-bright); font-size: 12px; }
+.admin-works-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.admin-work-box { border: 1px solid var(--border); border-radius: 10px; padding: 10px; background: var(--bg-deep); }
+.admin-work-top { font-size: 12px; color: var(--white-dim); margin-bottom: 8px; }
+.admin-work-preview-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--bg-card2);
+  cursor: pointer;
+}
+.admin-work-preview-wrap img { width: 100%; height: 100%; object-fit: cover; }
+.admin-work-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: .5;
+  font-size: 26px;
+}
+.admin-work-url { margin-top: 8px; }
 @media (max-width: 900px) { .admin-layout { grid-template-columns: 1fr; } }
 
 /* ── ARTIST DETAIL PANEL ── */
@@ -1168,9 +1202,22 @@ footer {
           <div><label class="admin-label">배지</label><input class="admin-input" id="aBadge"></div>
           <div><label class="admin-label">아이콘</label><input class="admin-input" id="aIcon"></div>
           <div><label class="admin-label">카드 소개</label><input class="admin-input" id="aCardDesc"></div>
+          <div class="admin-full">
+            <label class="admin-label">프로필 이미지 URL</label>
+            <input class="admin-input" id="aCharacterImg" placeholder="https://... 또는 업로드 데이터">
+          </div>
+          <div class="admin-full">
+            <label class="admin-label">프로필 이미지 업로드</label>
+            <div class="admin-upload-wrap">
+              <input class="admin-input" id="aCharacterFile" type="file" accept="image/*" onchange="adminUploadCharacterImage(event)" style="max-width:320px;">
+              <img id="aCharacterPreview" class="admin-preview" alt="프로필 미리보기">
+            </div>
+          </div>
           <div class="admin-full"><label class="admin-label">태그 (쉼표 구분)</label><input class="admin-input" id="aTags"></div>
           <div class="admin-full"><label class="admin-label">상세 소개</label><textarea class="admin-textarea" id="aBio"></textarea></div>
         </div>
+        <div class="admin-works-title">대표 작품 이미지 (최대 6개)</div>
+        <div id="adminWorksEditor" class="admin-works-grid"></div>
       </div>
     </div>
   </div>
@@ -1444,7 +1491,11 @@ function renderHomeArtists() {
   grid.innerHTML = artists.map((artist, idx) => `
     <div class="artist-card" onclick="openArtistPanel(${idx})">
       <div class="artist-img-wrap">
-        <div class="artist-img-placeholder"><span class="artist-placeholder-icon">${artist.icon || '🎨'}</span></div>
+        ${
+          artist.characterImg
+            ? `<img src="${artist.characterImg}" alt="${artist.name || '작가'}">`
+            : `<div class="artist-img-placeholder"><span class="artist-placeholder-icon">${artist.icon || '🎨'}</span></div>`
+        }
         <div class="artist-badge">${artist.badge || '작가'}</div>
       </div>
       <div class="artist-info">
@@ -1520,9 +1571,80 @@ function adminSelectArtist(idx) {
   document.getElementById('aBadge').value = a.badge || '';
   document.getElementById('aIcon').value = a.icon || '';
   document.getElementById('aCardDesc').value = a.cardDesc || '';
+  document.getElementById('aCharacterImg').value = a.characterImg || '';
+  const preview = document.getElementById('aCharacterPreview');
+  preview.src = a.characterImg || '';
+  preview.style.display = a.characterImg ? '' : 'none';
   document.getElementById('aTags').value = (a.tags || []).join(', ');
   document.getElementById('aBio').value = a.bio || '';
+  renderAdminWorksEditor(a);
   renderAdminList();
+}
+
+function renderAdminWorksEditor(artist) {
+  const wrap = document.getElementById('adminWorksEditor');
+  if (!wrap) return;
+  const works = Array.isArray(artist.works) ? [...artist.works] : [null, null, null, null, null, null];
+  while (works.length < 6) works.push(null);
+  wrap.innerHTML = works.map((url, i) => `
+    <div class="admin-work-box">
+      <div class="admin-work-top">작품 ${i + 1}</div>
+      <div class="admin-work-preview-wrap" onclick="document.getElementById('aWorkFile${i}').click()">
+        ${
+          url
+            ? `<img id="aWorkPreview${i}" src="${url}" alt="작품 ${i + 1}">`
+            : `<div id="aWorkPreview${i}" class="admin-work-placeholder">${(artist.workIcons && artist.workIcons[i]) || '🖼'}</div>`
+        }
+      </div>
+      <input id="aWorkFile${i}" type="file" accept="image/*" style="display:none" onchange="adminUploadWorkImage(${i}, event)">
+      <input id="aWorkUrl${i}" class="admin-input admin-work-url" value="${url || ''}" placeholder="URL 직접 입력" oninput="adminUpdateWorkPreview(${i}, this.value)">
+    </div>
+  `).join('');
+}
+
+function adminUploadCharacterImage(event) {
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const dataUrl = e.target && e.target.result ? String(e.target.result) : '';
+    if (!dataUrl) return;
+    document.getElementById('aCharacterImg').value = dataUrl;
+    const preview = document.getElementById('aCharacterPreview');
+    preview.src = dataUrl;
+    preview.style.display = '';
+  };
+  reader.readAsDataURL(file);
+}
+
+function adminUploadWorkImage(idx, event) {
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const dataUrl = e.target && e.target.result ? String(e.target.result) : '';
+    if (!dataUrl) return;
+    const input = document.getElementById(`aWorkUrl${idx}`);
+    if (input) input.value = dataUrl;
+    adminUpdateWorkPreview(idx, dataUrl);
+  };
+  reader.readAsDataURL(file);
+}
+
+function adminUpdateWorkPreview(idx, value) {
+  const preview = document.getElementById(`aWorkPreview${idx}`);
+  if (!preview) return;
+  if (preview.tagName === 'IMG') {
+    if (value) {
+      preview.src = value;
+    } else {
+      preview.outerHTML = `<div id="aWorkPreview${idx}" class="admin-work-placeholder">🖼</div>`;
+    }
+    return;
+  }
+  if (value) {
+    preview.outerHTML = `<img id="aWorkPreview${idx}" src="${value}" alt="작품 ${idx + 1}">`;
+  }
 }
 
 function adminAddArtist() {
@@ -1534,6 +1656,7 @@ function adminAddArtist() {
     tags: ['신규'],
     bio: '상세 소개를 입력해주세요.',
     sns: [{ label: '𝕏 Twitter', url: '#' }],
+    characterImg: null,
     works: [null, null, null, null, null, null],
     workIcons: ['🖼', '✨', '🌟', '🎨', '💫', '🌙'],
   });
@@ -1548,10 +1671,15 @@ async function adminSaveArtist() {
   t.badge = document.getElementById('aBadge').value.trim() || '작가';
   t.icon = document.getElementById('aIcon').value.trim() || '🎨';
   t.cardDesc = document.getElementById('aCardDesc').value.trim() || '작가 소개 문구입니다.';
+  t.characterImg = document.getElementById('aCharacterImg').value.trim() || null;
   t.tags = document.getElementById('aTags').value.split(',').map(v => v.trim()).filter(Boolean);
   t.bio = document.getElementById('aBio').value.trim() || '';
   if (!Array.isArray(t.sns)) t.sns = [{ label: '𝕏 Twitter', url: '#' }];
-  if (!Array.isArray(t.works)) t.works = [null, null, null, null, null, null];
+  t.works = Array.from({ length: 6 }, (_, i) => {
+    const input = document.getElementById(`aWorkUrl${i}`);
+    const value = input ? input.value.trim() : '';
+    return value || null;
+  });
   if (!Array.isArray(t.workIcons)) t.workIcons = ['🖼', '✨', '🌟', '🎨', '💫', '🌙'];
   try {
     await setDoc(artistsRef, { items: artists }, { merge: true });
@@ -1583,6 +1711,9 @@ window.adminSelectArtist = adminSelectArtist;
 window.adminAddArtist = adminAddArtist;
 window.adminSaveArtist = adminSaveArtist;
 window.adminDeleteArtist = adminDeleteArtist;
+window.adminUploadCharacterImage = adminUploadCharacterImage;
+window.adminUploadWorkImage = adminUploadWorkImage;
+window.adminUpdateWorkPreview = adminUpdateWorkPreview;
 window.openArtistPanel = openArtistPanel;
 window.closeArtistPanel = closeArtistPanel;
 
