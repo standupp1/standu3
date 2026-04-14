@@ -16,6 +16,19 @@
 }
 html { scroll-behavior: smooth; }
 body { background:var(--bg-deep); color:var(--white); font-family:var(--sans); overflow-x:hidden; min-height:100vh; }
+body {
+  opacity: 1;
+  transform: translateX(0);
+  transition: opacity .34s ease, transform .34s ease;
+}
+body.page-entering {
+  opacity: 0;
+  transform: translateX(18px);
+}
+body.page-leaving {
+  opacity: 0;
+  transform: translateX(-18px);
+}
 body::before {
   content:''; position:fixed; inset:0;
   background-image:
@@ -39,6 +52,11 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; display:flex; justify
 .page-title { font-family: 'Noto Serif KR', serif; letter-spacing: -0.01em;  font-family:var(--serif); font-size:clamp(36px,5vw,64px); font-weight:900; color:var(--white); margin-bottom:16px; line-height:1.1; }
 .page-title .accent { color:var(--blue-bright); }
 .page-desc { font-size:15px; color:var(--white-dim); font-weight:300; line-height:1.8; max-width:480px; margin:0 auto 40px; }
+.page-hero > * { opacity: 0; transform: translateY(16px); }
+body.page-loaded .page-hero > * { animation: heroFadeUp .7s ease forwards; }
+body.page-loaded .page-hero > *:nth-child(1) { animation-delay: .05s; }
+body.page-loaded .page-hero > *:nth-child(2) { animation-delay: .16s; }
+body.page-loaded .page-hero > *:nth-child(3) { animation-delay: .28s; }
 
 /* FILTER */
 .filter-bar { display:flex; justify-content:center; gap:10px; flex-wrap:wrap; margin-bottom:56px; }
@@ -51,6 +69,8 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; display:flex; justify
 
 /* CARD */
 .artist-card { background:var(--bg-card); border:1px solid var(--border); border-radius:18px; overflow:hidden; transition:all .3s; cursor:pointer; position:relative; }
+.artist-card.reveal-init { opacity: 0; transform: translateY(24px) scale(.985); }
+.artist-card.reveal-in { animation: cardReveal .6s cubic-bezier(.2,.7,0,1) forwards; }
 .artist-card:hover { border-color:var(--border-glow); transform:translateY(-6px); box-shadow:0 12px 40px rgba(74,128,232,.18); }
 .artist-card.active { border-color:var(--blue-bright); box-shadow:0 0 0 2px rgba(122,174,255,.3),0 12px 40px rgba(74,128,232,.2); transform:translateY(-6px); }
 .artist-card::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg,transparent,var(--blue-bright),transparent); opacity:0; transition:opacity .3s; }
@@ -186,6 +206,8 @@ body.admin-mode .detail-panel { display:none; }
   .panel-sns { gap:7px; }
 }
 @keyframes fadeIn { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+@keyframes heroFadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+@keyframes cardReveal { from{opacity:0;transform:translateY(24px) scale(.985)} to{opacity:1;transform:translateY(0) scale(1)} }
 </style>
 </head>
 <body>
@@ -301,18 +323,30 @@ function renderArtists() {
     const cover = artist.characterImg
       ? `<img src="${artist.characterImg}" alt="${artist.name || '작가'}">`
       : `<div class="artist-img-placeholder">${artist.icon || '🎨'}</div>`;
-    return `<div class="artist-card" data-idx="${idx}" data-genre="${genre}" onclick="openPanel(${idx})">
+    return `<div class="artist-card reveal-init" data-idx="${idx}" data-genre="${genre}" onclick="openPanel(${idx})">
       <div class="artist-img-wrap">${cover}<div class="artist-badge">${artist.badge || '작가'}</div></div>
       <div class="artist-info"><div class="artist-name">${artist.name || '작가명'}</div><div class="artist-desc">${cardDesc}</div><div class="artist-tags">${tags}</div></div>
     </div>`;
   }).join('');
 
-  const recruit = `<div class="artist-card recruiting" data-genre="all">
+  const recruit = `<div class="artist-card recruiting reveal-init" data-genre="all">
       <div class="artist-img-wrap"><div class="artist-img-placeholder">✦</div></div>
       <div class="recruit-text"><span class="recruit-icon">✦</span><div class="recruit-title">작가 모집 중</div><div class="recruit-sub">함께하고 싶은 작가님,<br>언제든 문의해주세요!</div></div>
     </div>`;
 
   grid.innerHTML = cards + recruit;
+  runCardReveal();
+}
+
+function runCardReveal() {
+  const cards = Array.from(document.querySelectorAll('.artist-card.reveal-init'));
+  if (!cards.length) return;
+  cards.forEach((card, idx) => {
+    setTimeout(() => {
+      card.classList.add('reveal-in');
+      card.classList.remove('reveal-init');
+    }, 80 * idx);
+  });
 }
 
 function openPanel(idx) {
@@ -476,6 +510,10 @@ async function loadJsonFallback() {
 }
 
 async function boot() {
+  window.requestAnimationFrame(() => {
+    document.body.classList.add('page-loaded');
+  });
+
   if (isAdmin) document.body.classList.add('admin-mode');
   if (!firebaseReady || !firebaseApp) {
     await loadJsonFallback();
@@ -511,6 +549,31 @@ async function boot() {
 }
 
 boot();
+
+function setupPageTransition() {
+  document.body.classList.add('page-entering');
+  requestAnimationFrame(() => {
+    document.body.classList.remove('page-entering');
+  });
+
+  const links = Array.from(document.querySelectorAll('a[href]'));
+  links.forEach((link) => {
+    link.addEventListener('click', (e) => {
+      const href = link.getAttribute('href');
+      if (!href) return;
+      if (href.startsWith('#') || href.startsWith('javascript:')) return;
+      if (link.target === '_blank') return;
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      e.preventDefault();
+      document.body.classList.add('page-leaving');
+      setTimeout(() => {
+        location.href = href;
+      }, 300);
+    });
+  });
+}
+
+setupPageTransition();
 </script>
 </body>
 </html>

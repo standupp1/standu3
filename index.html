@@ -35,6 +35,17 @@ body {
   color: var(--white);
   font-family: var(--sans);
   overflow-x: hidden;
+  opacity: 1;
+  transform: translateX(0);
+  transition: opacity .34s ease, transform .34s ease;
+}
+body.page-entering {
+  opacity: 0;
+  transform: translateX(18px);
+}
+body.page-leaving {
+  opacity: 0;
+  transform: translateX(-18px);
 }
 
 /* ── 별빛 배경 ── */
@@ -1741,6 +1752,31 @@ onSnapshot(artistsRef, (snap) => {
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeArtistPanel();
 });
+
+function setupPageTransition() {
+  document.body.classList.add('page-entering');
+  requestAnimationFrame(() => {
+    document.body.classList.remove('page-entering');
+  });
+
+  const links = Array.from(document.querySelectorAll('a[href]'));
+  links.forEach((link) => {
+    link.addEventListener('click', (e) => {
+      const href = link.getAttribute('href');
+      if (!href) return;
+      if (href.startsWith('#') || href.startsWith('javascript:')) return;
+      if (link.target === '_blank') return;
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      e.preventDefault();
+      document.body.classList.add('page-leaving');
+      setTimeout(() => {
+        location.href = href;
+      }, 300);
+    });
+  });
+}
+
+setupPageTransition();
 </script>
 </body>
 </html>
