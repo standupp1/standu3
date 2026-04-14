@@ -5,14 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Artists | STAND UP</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Gowun+Batang:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
   --bg-deep:#080c1a; --bg-mid:#0d1530; --bg-card:#111d3a; --bg-card2:#0f1a32;
   --navy:#1a2d5a; --blue:#4a80e8; --blue-bright:#7aaeff;
   --white:#eef2ff; --white-dim:rgba(238,242,255,0.65); --white-faint:rgba(238,242,255,0.25);
   --border:rgba(74,128,232,0.2); --border-glow:rgba(122,174,255,0.4);
-  --sans:'Noto Sans KR',sans-serif; --serif:'Cinzel',serif;
+  --sans: 'Noto Sans KR', sans-serif; --serif: 'Noto Serif KR', serif;
 }
 html { scroll-behavior: smooth; }
 body { background:var(--bg-deep); color:var(--white); font-family:var(--sans); overflow-x:hidden; min-height:100vh; }
@@ -29,14 +29,14 @@ body::before {
 
 /* NAV */
 nav { position:fixed; top:0; left:0; right:0; z-index:200; display:flex; justify-content:space-between; align-items:center; padding:22px 48px; background:linear-gradient(to bottom,rgba(8,12,26,.97),transparent); }
-.nav-logo { font-family:var(--serif); font-size:15px; letter-spacing:.25em; color:var(--blue-bright); text-decoration:none; text-shadow:0 0 12px rgba(122,174,255,.4); }
+.nav-logo { font-family: 'Noto Serif KR', serif; letter-spacing: -0.01em;  font-family:var(--serif); font-size:15px; letter-spacing:.25em; color:var(--blue-bright); text-decoration:none; text-shadow:0 0 12px rgba(122,174,255,.4); }
 .nav-back { display:flex; align-items:center; gap:8px; font-size:12px; font-weight:500; letter-spacing:.1em; color:var(--white-dim); text-decoration:none; border:1px solid var(--border-glow); border-radius:4px; padding:7px 16px; transition:all .2s; }
 .nav-back:hover { color:var(--blue-bright); background:rgba(122,174,255,.08); }
 
 /* PAGE HERO */
 .page-hero { position:relative; z-index:1; padding:140px 60px 60px; text-align:center; }
 .page-eyebrow { font-size:10px; letter-spacing:.35em; color:var(--blue); font-weight:700; text-transform:uppercase; margin-bottom:16px; }
-.page-title { font-family:var(--serif); font-size:clamp(36px,5vw,64px); font-weight:900; color:var(--white); margin-bottom:16px; line-height:1.1; }
+.page-title { font-family: 'Noto Serif KR', serif; letter-spacing: -0.01em;  font-family:var(--serif); font-size:clamp(36px,5vw,64px); font-weight:900; color:var(--white); margin-bottom:16px; line-height:1.1; }
 .page-title .accent { color:var(--blue-bright); }
 .page-desc { font-size:15px; color:var(--white-dim); font-weight:300; line-height:1.8; max-width:480px; margin:0 auto 40px; }
 
@@ -93,7 +93,7 @@ nav { position:fixed; top:0; left:0; right:0; z-index:200; display:flex; justify
 .panel-close { position:absolute; top:20px; right:24px; z-index:500; width:38px; height:38px; border-radius:50%; background:rgba(255,255,255,.05); border:1px solid var(--border); color:var(--white-dim); font-size:16px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .2s; font-family:var(--sans); }
 .panel-close:hover { background:rgba(122,174,255,.1); color:var(--blue-bright); border-color:var(--border-glow); }
 .panel-eyebrow { font-size:10px; letter-spacing:.3em; color:var(--blue); font-weight:700; text-transform:uppercase; margin-bottom:10px; }
-.panel-name { font-family:var(--serif); font-size:38px; font-weight:900; color:var(--white); margin-bottom:14px; line-height:1.1; }
+.panel-name { font-family: 'Noto Serif KR', serif; letter-spacing: -0.01em;  font-family:var(--serif); font-size:38px; font-weight:900; color:var(--white); margin-bottom:14px; line-height:1.1; }
 .panel-tags { display:flex; gap:7px; flex-wrap:wrap; margin-bottom:28px; }
 .panel-tag { background:rgba(74,128,232,.12); border:1px solid var(--border-glow); border-radius:100px; padding:4px 13px; font-size:11px; color:var(--blue-bright); font-weight:500; }
 .panel-section-label { font-size:10px; letter-spacing:.25em; color:var(--blue); font-weight:700; text-transform:uppercase; margin-bottom:12px; }
@@ -127,7 +127,7 @@ footer { position:relative; z-index:1; background:var(--bg-mid); border-top:1px 
   .panel-char-icon { font-size:60px; margin-bottom:0; }
   .panel-left-name { font-size:18px; }
   .panel-right { padding:24px 20px; }
-  .panel-name { font-size:26px; }
+  .panel-name { font-family: 'Noto Serif KR', serif; letter-spacing: -0.01em;  font-size:26px; }
   footer { flex-direction:column; gap:12px; text-align:center; padding:24px 20px; }
 }
 @media (max-width:480px) {

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>STAND UP | 서브컬처 매니지먼트</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Gowun+Batang:wght@400;700&family=Nanum+Gothic:wght@400;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -25,7 +25,7 @@
   --border:     rgba(74,128,232,0.2);
   --border-glow:rgba(122,174,255,0.4);
   --sans: 'Noto Sans KR', sans-serif;
-  --serif: 'Gowun Batang', serif;
+  --serif: 'Noto Serif KR', serif;
 }
 
 html { scroll-behavior: smooth; }
@@ -69,10 +69,10 @@ nav {
   background: linear-gradient(to bottom, rgba(8,12,26,0.95), transparent);
 }
 
-.nav-logo {
+.nav-logo { font-family: 'Noto Serif KR', serif; letter-spacing: -0.01em; 
   font-family: var(--serif);
   font-size: 15px;
-  letter-spacing: 0.25em;
+  letter-spacing: 0.01em;
   color: var(--blue-bright);
   text-shadow: 0 0 12px rgba(122,174,255,0.5);
 }
@@ -85,7 +85,7 @@ nav {
   font-family: var(--sans);
   font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.2em;
+  letter-spacing: 0.01em;
   color: var(--blue-bright);
   cursor: pointer;
   transition: all 0.2s;
@@ -133,7 +133,7 @@ nav {
 .menu-top-logo {
   font-family: var(--serif);
   font-size: 14px;
-  letter-spacing: 0.25em;
+  letter-spacing: 0.01em;
   color: var(--blue-bright);
 }
 
@@ -164,7 +164,7 @@ nav {
 }
 
 .menu-item:first-child { border-top: 1px solid rgba(74,128,232,0.1); }
-.menu-item:hover .menu-label { color: var(--blue-bright); text-shadow: 0 0 20px rgba(122,174,255,0.4); }
+.menu-item:hover .menu-label { font-family: 'Noto Serif KR', serif; letter-spacing: -0.01em;  color: var(--blue-bright); text-shadow: 0 0 20px rgba(122,174,255,0.4); }
 .menu-item:hover .menu-num { color: var(--blue-bright); }
 
 .menu-num {
@@ -176,7 +176,7 @@ nav {
   transition: color 0.2s;
 }
 
-.menu-label {
+.menu-label { font-family: 'Noto Serif KR', serif; letter-spacing: -0.01em; 
   font-size: clamp(36px, 6vw, 68px);
   font-weight: 900;
   color: var(--white);
@@ -194,7 +194,7 @@ nav {
 
 .menu-social-label {
   font-size: 10px;
-  letter-spacing: 0.2em;
+  letter-spacing: 0.01em;
   color: var(--blue);
   font-weight: 700;
   margin-bottom: 10px;
@@ -257,7 +257,7 @@ nav {
   padding: 6px 18px;
   font-size: 10px;
   font-weight: 700;
-  letter-spacing: 0.25em;
+  letter-spacing: 0.01em;
   color: var(--blue-bright);
   margin-bottom: 40px;
   text-transform: uppercase;
@@ -296,7 +296,7 @@ nav {
   text-shadow: 0 0 12px rgba(122,174,255,0.3);
 }
 
-.hero-copy {
+.hero-copy { font-family: 'Noto Serif KR', serif; letter-spacing: -0.01em; 
   font-size: clamp(28px, 4vw, 48px);
   font-weight: 900;
   color: var(--white);
@@ -378,7 +378,7 @@ nav {
   gap: 8px;
   color: var(--white-faint);
   font-size: 10px;
-  letter-spacing: 0.2em;
+  letter-spacing: 0.01em;
   font-weight: 500;
   animation: bounce 2s ease-in-out infinite;
 }
@@ -419,7 +419,7 @@ nav {
   margin-bottom: 12px;
 }
 
-.section-title {
+.section-title { font-family: 'Noto Serif KR', serif; letter-spacing: -0.01em; 
   font-family: var(--serif);
   font-size: clamp(32px, 4vw, 48px);
   font-weight: 900;
@@ -547,7 +547,7 @@ nav {
   padding: 4px 12px;
   font-size: 10px;
   font-weight: 700;
-  letter-spacing: 0.2em;
+  letter-spacing: 0.01em;
   color: var(--blue-bright);
   margin-bottom: 20px;
 }
@@ -583,7 +583,7 @@ nav {
 
 .info-label {
   font-size: 9px;
-  letter-spacing: 0.2em;
+  letter-spacing: 0.01em;
   color: var(--blue);
   font-weight: 700;
   margin-bottom: 4px;
@@ -625,7 +625,7 @@ nav {
 
 .about-text {}
 
-.about-headline {
+.about-headline { font-family: 'Noto Serif KR', serif; letter-spacing: -0.01em; 
   font-size: clamp(26px, 3vw, 40px);
   font-weight: 900;
   color: var(--white);
@@ -677,7 +677,7 @@ nav {
 .stat-small {
   font-size: 11px;
   color: var(--white-dim);
-  letter-spacing: 0.05em;
+  letter-spacing: 0.01em;
 }
 
 /* ── CONTACT ── */
@@ -702,7 +702,7 @@ nav {
   text-align: center;
 }
 
-.contact-headline {
+.contact-headline { font-family: 'Noto Serif KR', serif; letter-spacing: -0.01em; 
   font-size: clamp(28px, 4vw, 44px);
   font-weight: 900;
   color: var(--white);
@@ -738,7 +738,7 @@ nav {
 .form-label {
   font-size: 10px;
   font-weight: 700;
-  letter-spacing: 0.2em;
+  letter-spacing: 0.01em;
   color: var(--blue);
   text-transform: uppercase;
 }
@@ -810,7 +810,7 @@ footer {
 .footer-copy {
   font-size: 11px;
   color: var(--white-faint);
-  letter-spacing: 0.05em;
+  letter-spacing: 0.01em;
   margin-bottom: 6px;
 }
 
@@ -847,30 +847,30 @@ footer {
 /* responsive */
 @media (max-width: 900px) {
   nav { padding: 16px 20px; }
-  .nav-logo { font-size: 12px; }
+  .nav-logo { font-family: 'Noto Serif KR', serif; letter-spacing: -0.01em;  font-size: 12px; }
   .menu-btn { padding: 6px 14px; font-size: 10px; }
 
   .hero { padding: 100px 20px 70px; }
   .hero-logo-img { width: 240px; }
-  .hero-copy { font-size: 26px; }
+  .hero-copy { font-family: 'Noto Serif KR', serif; letter-spacing: -0.01em;  font-size: 26px; }
   .hero-desc { font-size: 14px; }
   .hero-cta { flex-direction: column; align-items: center; }
   .btn-glow, .btn-outline { width: 100%; max-width: 280px; text-align: center; }
 
   .services { padding: 70px 20px; }
   .services-grid { grid-template-columns: 1fr; }
-  .section-title { font-size: 28px; }
+  .section-title { font-family: 'Noto Serif KR', serif; letter-spacing: -0.01em;  font-size: 28px; }
 
   .about { grid-template-columns: 1fr; padding: 70px 20px; gap: 40px; }
   .about-card-float { display: none; }
   .about-stats { grid-template-columns: repeat(3, 1fr); gap: 10px; }
   .stat-big { font-size: 22px; }
   .stat-small { font-size: 10px; }
-  .about-headline { font-size: 24px; }
+  .about-headline { font-family: 'Noto Serif KR', serif; letter-spacing: -0.01em;  font-size: 24px; }
 
   .contact { padding: 70px 20px; }
   .contact-form { grid-template-columns: 1fr; }
-  .contact-headline { font-size: 28px; }
+  .contact-headline { font-family: 'Noto Serif KR', serif; letter-spacing: -0.01em;  font-size: 28px; }
 
   footer { flex-direction: column; gap: 14px; text-align: center; padding: 28px 20px; }
   .footer-logo-img { height: 28px; }
@@ -878,7 +878,7 @@ footer {
   .footer-links { justify-content: center; }
 
   .menu-overlay { padding: 28px 32px 40px; }
-  .menu-label { font-size: clamp(32px, 8vw, 56px); }
+  .menu-label { font-family: 'Noto Serif KR', serif; letter-spacing: -0.01em;  font-size: clamp(32px, 8vw, 56px); }
   .menu-social-links { gap: 16px; }
 }
 
@@ -886,8 +886,8 @@ footer {
   .hero { padding: 90px 16px 60px; }
   .hero-logo-img { width: 200px; }
   .hero-badge { font-size: 9px; letter-spacing: 0.15em; padding: 5px 14px; }
-  .hero-copy { font-size: 22px; }
-  .hero-sub { font-size: 11px; letter-spacing: 0.2em; }
+  .hero-copy { font-family: 'Noto Serif KR', serif; letter-spacing: -0.01em;  font-size: 22px; }
+  .hero-sub { font-size: 11px; letter-spacing: 0.01em; }
   .hero-desc { font-size: 13px; }
 
   .services { padding: 60px 16px; }
@@ -901,13 +901,13 @@ footer {
   .about-info-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
   .about-stats { gap: 8px; }
   .stat-big { font-size: 20px; }
-  .about-headline { font-size: 22px; }
+  .about-headline { font-family: 'Noto Serif KR', serif; letter-spacing: -0.01em;  font-size: 22px; }
   .about-body { font-size: 13px; }
 
   .identity-grid { grid-template-columns: 1fr 1fr; }
 
   .contact { padding: 60px 16px; }
-  .contact-headline { font-size: 24px; }
+  .contact-headline { font-family: 'Noto Serif KR', serif; letter-spacing: -0.01em;  font-size: 24px; }
   .contact-sub { font-size: 13px; }
 
   footer { padding: 24px 16px; }
@@ -915,7 +915,7 @@ footer {
   .footer-copy { font-size: 10px; }
 
   .menu-overlay { padding: 24px 24px 36px; }
-  .menu-label { font-size: clamp(28px, 9vw, 48px); }
+  .menu-label { font-family: 'Noto Serif KR', serif; letter-spacing: -0.01em;  font-size: clamp(28px, 9vw, 48px); }
   .menu-top-logo { font-size: 12px; }
 }
 
@@ -1028,7 +1028,7 @@ footer {
   font-size: 10px;
   color: var(--blue-bright);
   font-weight: 500;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.01em;
 }
 
 .artist-sns { display: flex; gap: 8px; }
