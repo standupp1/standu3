@@ -278,6 +278,11 @@ function filterArtists(genre, btn) {
   });
 }
 
+// module 스코프 함수들을 inline onclick에서 접근 가능하게 연결
+window.openPanel = openPanel;
+window.closePanel = closePanel;
+window.filterArtists = filterArtists;
+
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closePanel(); });
 
 async function loadJsonFallback() {

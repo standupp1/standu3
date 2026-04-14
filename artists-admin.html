@@ -345,6 +345,15 @@ function importJson(event) {
   reader.readAsText(file, 'utf-8');
 }
 
+// module 스코프 함수들을 inline onclick에서 접근 가능하게 연결
+window.addArtist = addArtist;
+window.saveArtist = saveArtist;
+window.deleteArtist = deleteArtist;
+window.downloadJson = downloadJson;
+window.importJson = importJson;
+window.selectArtist = selectArtist;
+window.handleWorkFileChange = handleWorkFileChange;
+
 requirePassword();
 loadArtists().then(() => {
   renderList();
