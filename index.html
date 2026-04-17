@@ -1229,6 +1229,7 @@ footer {
           <div><label class="admin-label">아트머그 URL</label><input class="admin-input" id="aArtmug" placeholder="https://..."></div>
           <div><label class="admin-label">픽시브 URL</label><input class="admin-input" id="aPixiv" placeholder="https://www.pixiv.net/users/..."></div>
           <div class="admin-full"><label class="admin-label">상세 소개</label><textarea class="admin-textarea" id="aBio"></textarea></div>
+          <div class="admin-full"><label class="admin-label">모집 현황 (사이트 공통)</label><input class="admin-input" id="aRecruitStatus" placeholder="예: 현재는 안 받고 있어"></div>
         </div>
         <div class="admin-works-title">대표 작품 이미지 (최대 6개)</div>
         <div id="adminWorksEditor" class="admin-works-grid"></div>
@@ -1342,7 +1343,7 @@ footer {
         </div>
         <div class="about-info-item">
           <div class="info-label">모집 현황</div>
-          <div class="info-value" style="color:var(--blue-bright);">현재는 안 받고 있어</div>
+          <div class="info-value" id="aboutRecruitStatus" style="color:var(--blue-bright);">현재는 안 받고 있어</div>
         </div>
       </div>
     </div>
@@ -1482,8 +1483,10 @@ const artistsRef = doc(db, 'standup_sites', 'standupp3_artists');
 const params = new URLSearchParams(location.search);
 const isAdmin = params.has('admin');
 const ARTISTS_CACHE_KEY = 'standupp3_artists_cache';
+const DEFAULT_RECRUIT_STATUS = '현재는 안 받고 있어';
 let artists = [];
 let selectedAdminIdx = -1;
+let recruitStatus = DEFAULT_RECRUIT_STATUS;
 
 function isValidSnsUrl(url) {
   if (typeof url !== 'string') return false;
@@ -1506,6 +1509,13 @@ function buildAdminSns(twitterUrl, artmugUrl, pixivUrl) {
   if (isValidSnsUrl(artmugUrl)) next.push({ label: '아트머그', url: artmugUrl.trim() });
   if (isValidSnsUrl(pixivUrl)) next.push({ label: 'P Pixiv', url: pixivUrl.trim() });
   return next;
+}
+
+function renderRecruitStatus() {
+  const aboutRecruitEl = document.getElementById('aboutRecruitStatus');
+  if (aboutRecruitEl) aboutRecruitEl.textContent = recruitStatus || DEFAULT_RECRUIT_STATUS;
+  const adminRecruitInput = document.getElementById('aRecruitStatus');
+  if (adminRecruitInput) adminRecruitInput.value = recruitStatus || DEFAULT_RECRUIT_STATUS;
 }
 
 function toggleMenu() {
@@ -1702,28 +1712,31 @@ function adminAddArtist() {
 }
 
 async function adminSaveArtist() {
-  if (selectedAdminIdx < 0 || !artists[selectedAdminIdx]) return;
-  const t = artists[selectedAdminIdx];
-  t.name = document.getElementById('aName').value.trim() || '작가명';
-  t.badge = document.getElementById('aBadge').value.trim() || '작가';
-  t.icon = document.getElementById('aIcon').value.trim() || '🎨';
-  t.cardDesc = document.getElementById('aCardDesc').value.trim() || '작가 소개 문구입니다.';
-  t.characterImg = document.getElementById('aCharacterImg').value.trim() || null;
-  t.tags = document.getElementById('aTags').value.split(',').map(v => v.trim()).filter(Boolean);
-  t.bio = document.getElementById('aBio').value.trim() || '';
-  t.sns = buildAdminSns(
-    document.getElementById('aTwitter').value,
-    document.getElementById('aArtmug').value,
-    document.getElementById('aPixiv').value
-  );
-  t.works = Array.from({ length: 6 }, (_, i) => {
-    const input = document.getElementById(`aWorkUrl${i}`);
-    const value = input ? input.value.trim() : '';
-    return value || null;
-  });
-  if (!Array.isArray(t.workIcons)) t.workIcons = ['🖼', '✨', '🌟', '🎨', '💫', '🌙'];
+  recruitStatus = document.getElementById('aRecruitStatus').value.trim() || DEFAULT_RECRUIT_STATUS;
+  renderRecruitStatus();
+  if (selectedAdminIdx >= 0 && artists[selectedAdminIdx]) {
+    const t = artists[selectedAdminIdx];
+    t.name = document.getElementById('aName').value.trim() || '작가명';
+    t.badge = document.getElementById('aBadge').value.trim() || '작가';
+    t.icon = document.getElementById('aIcon').value.trim() || '🎨';
+    t.cardDesc = document.getElementById('aCardDesc').value.trim() || '작가 소개 문구입니다.';
+    t.characterImg = document.getElementById('aCharacterImg').value.trim() || null;
+    t.tags = document.getElementById('aTags').value.split(',').map(v => v.trim()).filter(Boolean);
+    t.bio = document.getElementById('aBio').value.trim() || '';
+    t.sns = buildAdminSns(
+      document.getElementById('aTwitter').value,
+      document.getElementById('aArtmug').value,
+      document.getElementById('aPixiv').value
+    );
+    t.works = Array.from({ length: 6 }, (_, i) => {
+      const input = document.getElementById(`aWorkUrl${i}`);
+      const value = input ? input.value.trim() : '';
+      return value || null;
+    });
+    if (!Array.isArray(t.workIcons)) t.workIcons = ['🖼', '✨', '🌟', '🎨', '💫', '🌙'];
+  }
   try {
-    await setDoc(artistsRef, { items: artists }, { merge: true });
+    await setDoc(artistsRef, { items: artists, recruitStatus }, { merge: true });
     cacheArtists(artists);
     renderHomeArtists();
     renderAdminList();
@@ -1739,7 +1752,7 @@ async function adminDeleteArtist() {
   artists.splice(selectedAdminIdx, 1);
   selectedAdminIdx = -1;
   try {
-    await setDoc(artistsRef, { items: artists }, { merge: true });
+    await setDoc(artistsRef, { items: artists, recruitStatus }, { merge: true });
     cacheArtists(artists);
     renderHomeArtists();
     renderAdminList();
@@ -1764,11 +1777,16 @@ onSnapshot(artistsRef, (snap) => {
   if (snap.exists()) {
     const data = snap.data();
     artists = Array.isArray(data.items) ? data.items : [];
+    recruitStatus = typeof data.recruitStatus === 'string' && data.recruitStatus.trim()
+      ? data.recruitStatus.trim()
+      : DEFAULT_RECRUIT_STATUS;
     cacheArtists(artists);
   } else {
     const cached = getCachedArtists();
     artists = cached;
+    recruitStatus = DEFAULT_RECRUIT_STATUS;
   }
+  renderRecruitStatus();
   renderHomeArtists();
   if (isAdmin) {
     renderAdminList();
@@ -1776,6 +1794,7 @@ onSnapshot(artistsRef, (snap) => {
   }
 }, () => {
   artists = getCachedArtists();
+  renderRecruitStatus();
   renderHomeArtists();
 });
 
