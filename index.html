@@ -1225,6 +1225,9 @@ footer {
             </div>
           </div>
           <div class="admin-full"><label class="admin-label">태그 (쉼표 구분)</label><input class="admin-input" id="aTags"></div>
+          <div><label class="admin-label">트위터 URL</label><input class="admin-input" id="aTwitter" placeholder="https://x.com/..."></div>
+          <div><label class="admin-label">아트머그 URL</label><input class="admin-input" id="aArtmug" placeholder="https://..."></div>
+          <div><label class="admin-label">픽시브 URL</label><input class="admin-input" id="aPixiv" placeholder="https://www.pixiv.net/users/..."></div>
           <div class="admin-full"><label class="admin-label">상세 소개</label><textarea class="admin-textarea" id="aBio"></textarea></div>
         </div>
         <div class="admin-works-title">대표 작품 이미지 (최대 6개)</div>
@@ -1482,6 +1485,29 @@ const ARTISTS_CACHE_KEY = 'standupp3_artists_cache';
 let artists = [];
 let selectedAdminIdx = -1;
 
+function isValidSnsUrl(url) {
+  if (typeof url !== 'string') return false;
+  const trimmed = url.trim();
+  return !!trimmed && trimmed !== '#';
+}
+
+function pickSnsUrlByLabel(sns, matcher) {
+  if (!Array.isArray(sns)) return '';
+  const item = sns.find((entry) => {
+    const label = String(entry && entry.label ? entry.label : '').toLowerCase();
+    return matcher(label) && isValidSnsUrl(entry && entry.url ? String(entry.url) : '');
+  });
+  return item && item.url ? String(item.url).trim() : '';
+}
+
+function buildAdminSns(twitterUrl, artmugUrl, pixivUrl) {
+  const next = [];
+  if (isValidSnsUrl(twitterUrl)) next.push({ label: '𝕏 Twitter', url: twitterUrl.trim() });
+  if (isValidSnsUrl(artmugUrl)) next.push({ label: '아트머그', url: artmugUrl.trim() });
+  if (isValidSnsUrl(pixivUrl)) next.push({ label: 'P Pixiv', url: pixivUrl.trim() });
+  return next;
+}
+
 function toggleMenu() {
   document.getElementById('menuOverlay').classList.toggle('open');
 }
@@ -1522,7 +1548,8 @@ function openArtistPanel(idx) {
   document.getElementById('artistDetailBadge').textContent = a.badge || '작가';
   document.getElementById('artistDetailTags').innerHTML = (a.tags || []).map((t) => `<span class="tag">${t}</span>`).join('');
   document.getElementById('artistDetailBio').innerHTML = String(a.bio || '').replace(/\n/g, '<br>');
-  document.getElementById('artistDetailSns').innerHTML = (a.sns || []).map((s) => `<a href="${s.url || '#'}" target="_blank" rel="noopener">${s.label || 'SNS'}</a>`).join('');
+  const snsLinks = (Array.isArray(a.sns) ? a.sns : []).filter((s) => isValidSnsUrl(s && s.url ? String(s.url) : ''));
+  document.getElementById('artistDetailSns').innerHTML = snsLinks.map((s) => `<a href="${s.url}" target="_blank" rel="noopener">${s.label || 'SNS'}</a>`).join('');
   document.getElementById('artistDetailWorks').innerHTML = (a.works || []).slice(0, 6).map((w, i) =>
     w
       ? `<div class="artist-detail-work"><img src="${w}" alt="작품 ${i + 1}"></div>`
@@ -1584,6 +1611,9 @@ function adminSelectArtist(idx) {
   preview.style.display = a.characterImg ? '' : 'none';
   document.getElementById('aTags').value = (a.tags || []).join(', ');
   document.getElementById('aBio').value = a.bio || '';
+  document.getElementById('aTwitter').value = pickSnsUrlByLabel(a.sns, (label) => label.includes('twitter') || label.includes('x'));
+  document.getElementById('aArtmug').value = pickSnsUrlByLabel(a.sns, (label) => label.includes('아트머그') || label.includes('artmug'));
+  document.getElementById('aPixiv').value = pickSnsUrlByLabel(a.sns, (label) => label.includes('pixiv'));
   renderAdminWorksEditor(a);
   renderAdminList();
 }
@@ -1662,7 +1692,7 @@ function adminAddArtist() {
     cardDesc: '작가 소개를 입력해주세요.',
     tags: ['신규'],
     bio: '상세 소개를 입력해주세요.',
-    sns: [{ label: '𝕏 Twitter', url: '#' }],
+    sns: [],
     characterImg: null,
     works: [null, null, null, null, null, null],
     workIcons: ['🖼', '✨', '🌟', '🎨', '💫', '🌙'],
@@ -1681,7 +1711,11 @@ async function adminSaveArtist() {
   t.characterImg = document.getElementById('aCharacterImg').value.trim() || null;
   t.tags = document.getElementById('aTags').value.split(',').map(v => v.trim()).filter(Boolean);
   t.bio = document.getElementById('aBio').value.trim() || '';
-  if (!Array.isArray(t.sns)) t.sns = [{ label: '𝕏 Twitter', url: '#' }];
+  t.sns = buildAdminSns(
+    document.getElementById('aTwitter').value,
+    document.getElementById('aArtmug').value,
+    document.getElementById('aPixiv').value
+  );
   t.works = Array.from({ length: 6 }, (_, i) => {
     const input = document.getElementById(`aWorkUrl${i}`);
     const value = input ? input.value.trim() : '';
