@@ -247,6 +247,9 @@ body.admin-mode .detail-panel { display:none; }
             </div>
           </div>
           <div class="admin-full"><label class="admin-label">태그 (쉼표 구분)</label><input class="admin-input" id="aTags"></div>
+          <div><label class="admin-label">트위터 URL</label><input class="admin-input" id="aTwitter" placeholder="https://x.com/..."></div>
+          <div><label class="admin-label">아트머그 URL</label><input class="admin-input" id="aArtmug" placeholder="https://..."></div>
+          <div><label class="admin-label">픽시브 URL</label><input class="admin-input" id="aPixiv" placeholder="https://www.pixiv.net/users/..."></div>
           <div class="admin-full"><label class="admin-label">상세 소개</label><textarea class="admin-textarea" id="aBio"></textarea></div>
         </div>
       </div>
@@ -307,6 +310,29 @@ import { getFirestore, doc, onSnapshot, setDoc } from 'https://www.gstatic.com/f
 let artists = [];
 let selectedAdminIdx = -1;
 const isAdmin = new URLSearchParams(location.search).has('admin');
+
+function isValidSnsUrl(url) {
+  if (typeof url !== 'string') return false;
+  const trimmed = url.trim();
+  return !!trimmed && trimmed !== '#';
+}
+
+function pickSnsUrlByLabel(sns, matcher) {
+  if (!Array.isArray(sns)) return '';
+  const item = sns.find((entry) => {
+    const label = String(entry && entry.label ? entry.label : '').toLowerCase();
+    return matcher(label) && isValidSnsUrl(entry && entry.url ? String(entry.url) : '');
+  });
+  return item && item.url ? String(item.url).trim() : '';
+}
+
+function buildAdminSns(twitterUrl, artmugUrl, pixivUrl) {
+  const next = [];
+  if (isValidSnsUrl(twitterUrl)) next.push({ label: '𝕏 Twitter', url: twitterUrl.trim() });
+  if (isValidSnsUrl(artmugUrl)) next.push({ label: '아트머그', url: artmugUrl.trim() });
+  if (isValidSnsUrl(pixivUrl)) next.push({ label: 'P Pixiv', url: pixivUrl.trim() });
+  return next;
+}
 
 function getCardDesc(artist) {
   if (artist.cardDesc && artist.cardDesc.trim()) return artist.cardDesc.trim();
@@ -374,7 +400,8 @@ function openPanel(idx) {
   document.getElementById('panelName').textContent = a.name;
   document.getElementById('panelTags').innerHTML = a.tags.map(t=>`<span class="panel-tag">${t}</span>`).join('');
   document.getElementById('panelBio').innerHTML = a.bio.replace(/\n/g,'<br>');
-  document.getElementById('panelSns').innerHTML = a.sns.map(s=>`<a href="${s.url}" class="panel-sns-btn" target="_blank">${s.label}</a>`).join('');
+  const snsLinks = (Array.isArray(a.sns) ? a.sns : []).filter((s) => isValidSnsUrl(s && s.url ? String(s.url) : ''));
+  document.getElementById('panelSns').innerHTML = snsLinks.map(s => `<a href="${s.url}" class="panel-sns-btn" target="_blank">${s.label}</a>`).join('');
   document.getElementById('worksGrid').innerHTML = a.works.map((w,i)=>
     w ? `<div class="work-item"><img src="${w}" alt="작품${i+1}"></div>`
       : `<div class="work-item"><div class="work-placeholder"><span class="wi">${a.workIcons[i]||'🖼'}</span><span class="wl">작품 ${i+1}</span></div></div>`
@@ -418,6 +445,9 @@ function adminSelectArtist(idx) {
   preview.style.display = a.characterImg ? '' : 'none';
   document.getElementById('aTags').value = (a.tags || []).join(', ');
   document.getElementById('aBio').value = a.bio || '';
+  document.getElementById('aTwitter').value = pickSnsUrlByLabel(a.sns, (label) => label.includes('twitter') || label.includes('x'));
+  document.getElementById('aArtmug').value = pickSnsUrlByLabel(a.sns, (label) => label.includes('아트머그') || label.includes('artmug'));
+  document.getElementById('aPixiv').value = pickSnsUrlByLabel(a.sns, (label) => label.includes('pixiv'));
   renderAdminList();
 }
 
@@ -444,7 +474,7 @@ function adminAddArtist() {
     cardDesc: '작가 소개를 입력해주세요.',
     tags: ['신규'],
     bio: '상세 소개를 입력해주세요.',
-    sns: [{ label: '𝕏 Twitter', url: '#' }],
+    sns: [],
     characterImg: null,
     works: [null, null, null, null, null, null],
     workIcons: ['🖼', '✨', '🌟', '🎨', '💫', '🌙'],
@@ -463,7 +493,11 @@ async function adminSaveArtist() {
   t.characterImg = document.getElementById('aCharacterImg').value.trim() || null;
   t.tags = document.getElementById('aTags').value.split(',').map(v => v.trim()).filter(Boolean);
   t.bio = document.getElementById('aBio').value.trim() || '';
-  if (!Array.isArray(t.sns)) t.sns = [{ label: '𝕏 Twitter', url: '#' }];
+  t.sns = buildAdminSns(
+    document.getElementById('aTwitter').value,
+    document.getElementById('aArtmug').value,
+    document.getElementById('aPixiv').value
+  );
   if (!Array.isArray(t.works)) t.works = [null, null, null, null, null, null];
   if (!Array.isArray(t.workIcons)) t.workIcons = ['🖼', '✨', '🌟', '🎨', '💫', '🌙'];
   await setDoc(doc(getFirestore(firebaseApp), artistsDocPath.collection, artistsDocPath.document), { items: artists }, { merge: true });
