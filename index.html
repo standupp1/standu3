@@ -1415,22 +1415,22 @@ footer {
     <div class="contact-form">
       <div class="form-group">
         <label class="form-label">작가명 / 활동명</label>
-        <input class="form-input" type="text" placeholder="활동명을 입력해주세요" />
+        <input class="form-input" id="contactArtistName" type="text" placeholder="활동명을 입력해주세요" />
       </div>
       <div class="form-group">
         <label class="form-label">이메일</label>
-        <input class="form-input" type="email" placeholder="email@example.com" />
+        <input class="form-input" id="contactEmail" type="email" placeholder="email@example.com" />
       </div>
       <div class="form-group full">
         <label class="form-label">활동 플랫폼</label>
-        <input class="form-input" type="text" placeholder="트위터, 픽시브, 인스타그램 등" />
+        <input class="form-input" id="contactPlatform" type="text" placeholder="트위터, 픽시브, 인스타그램 등" />
       </div>
       <div class="form-group full">
         <label class="form-label">문의 내용</label>
-        <textarea class="form-input" placeholder="문의 내용을 자유롭게 작성해주세요."></textarea>
+        <textarea class="form-input" id="contactMessage" placeholder="문의 내용을 자유롭게 작성해주세요."></textarea>
       </div>
       <div class="full">
-        <button class="form-submit">문의 보내기 ✦</button>
+        <button class="form-submit" type="button" onclick="handleContactSubmit()">문의 보내기 ✦</button>
       </div>
     </div>
   </div>
@@ -1484,6 +1484,7 @@ const params = new URLSearchParams(location.search);
 const isAdmin = params.has('admin');
 const ARTISTS_CACHE_KEY = 'standupp3_artists_cache';
 const DEFAULT_RECRUIT_STATUS = '현재는 안 받고 있어';
+const CONTACT_RECEIVER_EMAIL = 'moocrew25@gmail.com';
 let artists = [];
 let selectedAdminIdx = -1;
 let recruitStatus = DEFAULT_RECRUIT_STATUS;
@@ -1522,6 +1523,24 @@ function toggleMenu() {
   document.getElementById('menuOverlay').classList.toggle('open');
 }
 window.toggleMenu = toggleMenu;
+
+function handleContactSubmit() {
+  const name = document.getElementById('contactArtistName').value.trim();
+  const email = document.getElementById('contactEmail').value.trim();
+  const platform = document.getElementById('contactPlatform').value.trim();
+  const message = document.getElementById('contactMessage').value.trim();
+  const subject = `[STAND UP 문의] ${name || '익명'}`;
+  const body = [
+    `작가명 / 활동명: ${name || '-'}`,
+    `이메일: ${email || '-'}`,
+    `활동 플랫폼: ${platform || '-'}`,
+    '',
+    '[문의 내용]',
+    message || '-',
+  ].join('\n');
+  alert('문의 해주셔서 감사합니다.');
+  window.location.href = `mailto:${CONTACT_RECEIVER_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}
 
 function getCardDesc(artist) {
   if (artist.cardDesc && artist.cardDesc.trim()) return artist.cardDesc;
@@ -1770,6 +1789,7 @@ window.adminUploadWorkImage = adminUploadWorkImage;
 window.adminUpdateWorkPreview = adminUpdateWorkPreview;
 window.openArtistPanel = openArtistPanel;
 window.closeArtistPanel = closeArtistPanel;
+window.handleContactSubmit = handleContactSubmit;
 
 if (isAdmin) document.body.classList.add('admin-mode');
 
