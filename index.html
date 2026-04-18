@@ -1228,6 +1228,7 @@ footer {
           <div><label class="admin-label">트위터 URL</label><input class="admin-input" id="aTwitter" placeholder="https://x.com/..."></div>
           <div><label class="admin-label">아트머그 URL</label><input class="admin-input" id="aArtmug" placeholder="https://..."></div>
           <div><label class="admin-label">픽시브 URL</label><input class="admin-input" id="aPixiv" placeholder="https://www.pixiv.net/users/..."></div>
+          <div><label class="admin-label">브이젠 URL</label><input class="admin-input" id="aVgen" placeholder="https://vgen.co/..."></div>
           <div class="admin-full"><label class="admin-label">상세 소개</label><textarea class="admin-textarea" id="aBio"></textarea></div>
           <div class="admin-full"><label class="admin-label">모집 현황 (사이트 공통)</label><input class="admin-input" id="aRecruitStatus" placeholder="예: 현재는 안 받고 있어"></div>
         </div>
@@ -1507,11 +1508,12 @@ function pickSnsUrlByLabel(sns, matcher) {
   return item && item.url ? String(item.url).trim() : '';
 }
 
-function buildAdminSns(twitterUrl, artmugUrl, pixivUrl) {
+function buildAdminSns(twitterUrl, artmugUrl, pixivUrl, vgenUrl) {
   const next = [];
   if (isValidSnsUrl(twitterUrl)) next.push({ label: '𝕏 Twitter', url: twitterUrl.trim() });
   if (isValidSnsUrl(artmugUrl)) next.push({ label: '아트머그', url: artmugUrl.trim() });
   if (isValidSnsUrl(pixivUrl)) next.push({ label: 'P Pixiv', url: pixivUrl.trim() });
+  if (isValidSnsUrl(vgenUrl)) next.push({ label: '브이젠', url: vgenUrl.trim() });
   return next;
 }
 
@@ -1691,6 +1693,7 @@ function adminSelectArtist(idx) {
   document.getElementById('aTwitter').value = pickSnsUrlByLabel(a.sns, (label) => label.includes('twitter') || label.includes('x'));
   document.getElementById('aArtmug').value = pickSnsUrlByLabel(a.sns, (label) => label.includes('아트머그') || label.includes('artmug'));
   document.getElementById('aPixiv').value = pickSnsUrlByLabel(a.sns, (label) => label.includes('pixiv'));
+  document.getElementById('aVgen').value = pickSnsUrlByLabel(a.sns, (label) => label.includes('브이젠') || label.includes('vgen'));
   renderAdminWorksEditor(a);
   renderAdminList();
 }
@@ -1698,7 +1701,8 @@ function adminSelectArtist(idx) {
 function renderAdminWorksEditor(artist) {
   const wrap = document.getElementById('adminWorksEditor');
   if (!wrap) return;
-  const works = Array.isArray(artist.works) ? [...artist.works] : [null, null, null, null, null, null];
+  const safeArtist = artist || {};
+  const works = Array.isArray(safeArtist.works) ? [...safeArtist.works] : [null, null, null, null, null, null];
   while (works.length < 6) works.push(null);
   wrap.innerHTML = works.map((url, i) => `
     <div class="admin-work-box">
@@ -1707,7 +1711,7 @@ function renderAdminWorksEditor(artist) {
         ${
           url
             ? `<img id="aWorkPreview${i}" src="${url}" alt="작품 ${i + 1}">`
-            : `<div id="aWorkPreview${i}" class="admin-work-placeholder">${(artist.workIcons && artist.workIcons[i]) || '🖼'}</div>`
+            : `<div id="aWorkPreview${i}" class="admin-work-placeholder">${(safeArtist.workIcons && safeArtist.workIcons[i]) || '🖼'}</div>`
         }
       </div>
       <input id="aWorkFile${i}" type="file" accept="image/*" style="display:none" onchange="adminUploadWorkImage(${i}, event)">
@@ -1793,7 +1797,8 @@ async function adminSaveArtist() {
     t.sns = buildAdminSns(
       document.getElementById('aTwitter').value,
       document.getElementById('aArtmug').value,
-      document.getElementById('aPixiv').value
+      document.getElementById('aPixiv').value,
+      document.getElementById('aVgen').value
     );
     t.works = Array.from({ length: 6 }, (_, i) => {
       const input = document.getElementById(`aWorkUrl${i}`);
@@ -1823,6 +1828,7 @@ async function adminDeleteArtist() {
     cacheArtists(artists);
     renderHomeArtists();
     renderAdminList();
+    renderAdminWorksEditor(null);
   } catch (e) {
     alert('삭제 저장 실패: Firestore 권한(규칙) 또는 연결 상태를 확인해주세요.');
   }
@@ -1858,7 +1864,11 @@ onSnapshot(artistsRef, (snap) => {
   renderHomeArtists();
   if (isAdmin) {
     renderAdminList();
-    if (selectedAdminIdx < 0 && artists.length) adminSelectArtist(0);
+    if (selectedAdminIdx < 0 && artists.length) {
+      adminSelectArtist(0);
+    } else if (!artists.length) {
+      renderAdminWorksEditor(null);
+    }
   }
 }, () => {
   artists = getCachedArtists();
