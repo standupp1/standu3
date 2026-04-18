@@ -1814,7 +1814,9 @@ async function adminSaveArtist() {
     renderAdminList();
     alert('저장 완료: 고객 화면에 반영됩니다.');
   } catch (e) {
-    alert('저장 실패: Firestore 권한(규칙) 또는 연결 상태를 확인해주세요.');
+    console.error('Firestore save failed:', e);
+    const errCode = e && e.code ? String(e.code) : 'unknown';
+    alert(`저장 실패 (${errCode})\nFirestore 권한(규칙) 또는 연결 상태를 확인해주세요.`);
   }
 }
 
@@ -1830,7 +1832,9 @@ async function adminDeleteArtist() {
     renderAdminList();
     renderAdminWorksEditor(null);
   } catch (e) {
-    alert('삭제 저장 실패: Firestore 권한(규칙) 또는 연결 상태를 확인해주세요.');
+    console.error('Firestore delete failed:', e);
+    const errCode = e && e.code ? String(e.code) : 'unknown';
+    alert(`삭제 저장 실패 (${errCode})\nFirestore 권한(규칙) 또는 연결 상태를 확인해주세요.`);
   }
 }
 
