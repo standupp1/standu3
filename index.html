@@ -1468,7 +1468,8 @@ footer {
 
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js';
-import { getFirestore, doc, onSnapshot, setDoc } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js';
+import { getFirestore, doc, collection, onSnapshot, setDoc, getDoc, getDocs, deleteDoc, writeBatch } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js';
+import { getStorage, ref as storageRef, uploadString, getDownloadURL } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-storage.js';
 
 const firebaseConfig = {
   apiKey: "AIzaSyDd85t65S0F5sZSsiYCwQMSnmw0Jt3HlEg",
@@ -1480,7 +1481,9 @@ const firebaseConfig = {
 };
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-const artistsRef = doc(db, 'standup_sites', 'standupp3_artists');
+const storage = getStorage(app);
+const siteDocRef = doc(db, 'standup_sites', 'standupp3_artists');
+const artistsColRef = collection(siteDocRef, 'artists');
 const params = new URLSearchParams(location.search);
 const isAdmin = params.has('admin');
 const ARTISTS_CACHE_KEY = 'standupp3_artists_cache';
@@ -1492,6 +1495,40 @@ const EMAILJS_PUBLIC_KEY = 'OfzE9v6hiHgQScofZ';
 let artists = [];
 let selectedAdminIdx = -1;
 let recruitStatus = DEFAULT_RECRUIT_STATUS;
+let usingLegacyArtists = false;
+
+function generateArtistId() {
+  if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+    return window.crypto.randomUUID();
+  }
+  return `artist_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function normalizeArtist(raw, fallbackId = '') {
+  const item = raw && typeof raw === 'object' ? raw : {};
+  const works = Array.isArray(item.works) ? [...item.works] : [];
+  while (works.length < 6) works.push(null);
+  return {
+    id: String(item.id || fallbackId || generateArtistId()),
+    name: String(item.name || '작가명'),
+    badge: String(item.badge || '작가'),
+    icon: String(item.icon || '🎨'),
+    cardDesc: String(item.cardDesc || '작가 소개 문구입니다.'),
+    tags: Array.isArray(item.tags) ? item.tags.map((t) => String(t)).filter(Boolean) : [],
+    bio: String(item.bio || ''),
+    sns: Array.isArray(item.sns) ? item.sns : [],
+    characterImg: item.characterImg ? String(item.characterImg) : null,
+    works: works.map((w) => (w ? String(w) : null)),
+    workIcons: Array.isArray(item.workIcons) && item.workIcons.length === 6
+      ? item.workIcons.map((w) => String(w || '🖼'))
+      : ['🖼', '✨', '🌟', '🎨', '💫', '🌙'],
+    profileStoragePath: item.profileStoragePath ? String(item.profileStoragePath) : null,
+    workStoragePaths: Array.isArray(item.workStoragePaths)
+      ? item.workStoragePaths.map((w) => (w ? String(w) : null))
+      : [null, null, null, null, null, null],
+    order: Number.isFinite(Number(item.order)) ? Number(item.order) : 0,
+  };
+}
 
 function isValidSnsUrl(url) {
   if (typeof url !== 'string') return false;
@@ -1539,6 +1576,50 @@ function estimateJsonBytes(value) {
   } catch (e) {
     return Infinity;
   }
+}
+
+function estimateStringBytes(text) {
+  return new TextEncoder().encode(String(text || '')).length;
+}
+
+function formatBytes(bytes) {
+  if (!Number.isFinite(bytes) || bytes <= 0) return '0B';
+  if (bytes < 1024) return `${bytes}B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)}KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(2)}MB`;
+}
+
+function buildImageSizeDiagnostics(items) {
+  if (!Array.isArray(items)) return [];
+  const diagnostics = [];
+  items.forEach((artist, artistIdx) => {
+    const artistName = (artist && artist.name ? String(artist.name) : '').trim() || `작가 ${artistIdx + 1}`;
+    const profile = artist && typeof artist.characterImg === 'string' ? artist.characterImg : '';
+    if (profile.startsWith('data:image/')) {
+      diagnostics.push({
+        kind: 'profile',
+        artistIdx,
+        artistName,
+        label: `${artistName} / 프로필 이미지`,
+        bytes: estimateStringBytes(profile),
+      });
+    }
+    const works = artist && Array.isArray(artist.works) ? artist.works : [];
+    works.forEach((workUrl, workIdx) => {
+      const work = typeof workUrl === 'string' ? workUrl : '';
+      if (!work.startsWith('data:image/')) return;
+      diagnostics.push({
+        kind: 'work',
+        artistIdx,
+        artistName,
+        workIdx,
+        label: `${artistName} / 작품 ${workIdx + 1}`,
+        bytes: estimateStringBytes(work),
+      });
+    });
+  });
+  diagnostics.sort((a, b) => b.bytes - a.bytes);
+  return diagnostics;
 }
 
 function fileToDataUrl(file) {
@@ -1589,6 +1670,57 @@ function imageFileToOptimizedDataUrl(file, maxEdge = 1200, quality = 0.82) {
     };
     img.src = blobUrl;
   });
+}
+
+async function uploadDataUrlToStorage(dataUrl, path) {
+  const refObj = storageRef(storage, path);
+  await uploadString(refObj, dataUrl, 'data_url');
+  return getDownloadURL(refObj);
+}
+
+function makeStoragePath(artistId, slot) {
+  const stamp = Date.now();
+  const safeSlot = String(slot).replace(/[^a-zA-Z0-9_-]/g, '');
+  return `standupp3/artists/${artistId}/${safeSlot}_${stamp}.jpg`;
+}
+
+async function migrateArtistImagesToStorage(artist) {
+  const next = { ...artist };
+  if (typeof next.characterImg === 'string' && next.characterImg.startsWith('data:image/')) {
+    const profilePath = makeStoragePath(next.id, 'profile');
+    next.characterImg = await uploadDataUrlToStorage(next.characterImg, profilePath);
+    next.profileStoragePath = profilePath;
+  }
+
+  const works = Array.isArray(next.works) ? [...next.works] : [null, null, null, null, null, null];
+  const storagePaths = Array.isArray(next.workStoragePaths) ? [...next.workStoragePaths] : [null, null, null, null, null, null];
+  while (works.length < 6) works.push(null);
+  while (storagePaths.length < 6) storagePaths.push(null);
+
+  for (let i = 0; i < works.length; i += 1) {
+    const work = works[i];
+    if (typeof work === 'string' && work.startsWith('data:image/')) {
+      const workPath = makeStoragePath(next.id, `work_${i + 1}`);
+      works[i] = await uploadDataUrlToStorage(work, workPath);
+      storagePaths[i] = workPath;
+    }
+  }
+  next.works = works;
+  next.workStoragePaths = storagePaths;
+  return next;
+}
+
+async function migrateLegacyArtistsToCollection(items) {
+  if (!Array.isArray(items) || !items.length) return;
+  const batch = writeBatch(db);
+  items.forEach((raw, index) => {
+    const artist = normalizeArtist(raw, raw && raw.id ? String(raw.id) : generateArtistId());
+    artist.order = index;
+    const artistRef = doc(artistsColRef, artist.id);
+    batch.set(artistRef, sanitizeForFirestore(artist), { merge: true });
+  });
+  batch.set(siteDocRef, { recruitStatus }, { merge: true });
+  await batch.commit();
 }
 
 function renderRecruitStatus() {
@@ -1855,6 +1987,7 @@ function adminUpdateWorkPreview(idx, value) {
 
 function adminAddArtist() {
   artists.push({
+    id: generateArtistId(),
     name: '새 작가',
     badge: '일러스트',
     icon: '🎨',
@@ -1865,6 +1998,9 @@ function adminAddArtist() {
     characterImg: null,
     works: [null, null, null, null, null, null],
     workIcons: ['🖼', '✨', '🌟', '🎨', '💫', '🌙'],
+    profileStoragePath: null,
+    workStoragePaths: [null, null, null, null, null, null],
+    order: artists.length,
   });
   adminSelectArtist(artists.length - 1);
   renderHomeArtists();
@@ -1896,13 +2032,19 @@ async function adminSaveArtist() {
     if (!Array.isArray(t.workIcons)) t.workIcons = ['🖼', '✨', '🌟', '🎨', '💫', '🌙'];
   }
   try {
-    const payload = sanitizeForFirestore({ items: artists, recruitStatus });
-    const payloadBytes = estimateJsonBytes(payload);
-    if (payloadBytes > 900000) {
-      alert('저장할 데이터가 너무 큽니다. 업로드 이미지를 줄이거나 이미지 URL을 사용해주세요.');
-      return;
+    if (usingLegacyArtists) {
+      await migrateLegacyArtistsToCollection(artists);
+      usingLegacyArtists = false;
     }
-    await setDoc(artistsRef, payload, { merge: true });
+
+    const source = artists[selectedAdminIdx];
+    const withUploadedImages = await migrateArtistImagesToStorage(source);
+    withUploadedImages.order = selectedAdminIdx;
+    artists[selectedAdminIdx] = withUploadedImages;
+
+    const payload = sanitizeForFirestore(withUploadedImages);
+    await setDoc(doc(artistsColRef, withUploadedImages.id), payload, { merge: true });
+    await setDoc(siteDocRef, { recruitStatus }, { merge: true });
     cacheArtists(artists);
     renderHomeArtists();
     renderAdminList();
@@ -1918,11 +2060,14 @@ async function adminSaveArtist() {
 async function adminDeleteArtist() {
   if (selectedAdminIdx < 0 || !artists[selectedAdminIdx]) return;
   if (!confirm('선택한 작가를 삭제할까요?')) return;
+  const target = artists[selectedAdminIdx];
   artists.splice(selectedAdminIdx, 1);
   selectedAdminIdx = -1;
   try {
-    const payload = sanitizeForFirestore({ items: artists, recruitStatus });
-    await setDoc(artistsRef, payload, { merge: true });
+    if (target && target.id) {
+      await deleteDoc(doc(artistsColRef, target.id));
+    }
+    await setDoc(siteDocRef, { recruitStatus }, { merge: true });
     cacheArtists(artists);
     renderHomeArtists();
     renderAdminList();
@@ -1947,19 +2092,9 @@ window.handleContactSubmit = handleContactSubmit;
 
 if (isAdmin) document.body.classList.add('admin-mode');
 
-onSnapshot(artistsRef, (snap) => {
-  if (snap.exists()) {
-    const data = snap.data();
-    artists = Array.isArray(data.items) ? data.items : [];
-    recruitStatus = typeof data.recruitStatus === 'string' && data.recruitStatus.trim()
-      ? data.recruitStatus.trim()
-      : DEFAULT_RECRUIT_STATUS;
-    cacheArtists(artists);
-  } else {
-    const cached = getCachedArtists();
-    artists = cached;
-    recruitStatus = DEFAULT_RECRUIT_STATUS;
-  }
+function applyArtistsToUi(nextArtists) {
+  artists = [...nextArtists];
+  cacheArtists(artists);
   renderRecruitStatus();
   renderHomeArtists();
   if (isAdmin) {
@@ -1970,11 +2105,73 @@ onSnapshot(artistsRef, (snap) => {
       renderAdminWorksEditor(null);
     }
   }
-}, () => {
-  artists = getCachedArtists();
+}
+
+async function bootstrapLegacyIfNeeded() {
+  try {
+    const collectionSnap = await getDocs(artistsColRef);
+    if (!collectionSnap.empty) return;
+
+    const legacySnap = await getDoc(siteDocRef);
+    if (!legacySnap.exists()) return;
+    const legacyData = legacySnap.data();
+    if (typeof legacyData.recruitStatus === 'string' && legacyData.recruitStatus.trim()) {
+      recruitStatus = legacyData.recruitStatus.trim();
+    }
+    if (Array.isArray(legacyData.items) && legacyData.items.length) {
+      usingLegacyArtists = true;
+      const normalized = legacyData.items.map((item, idx) => {
+        const next = normalizeArtist(item, item && item.id ? String(item.id) : generateArtistId());
+        next.order = idx;
+        return next;
+      });
+      applyArtistsToUi(normalized);
+    }
+  } catch (err) {
+    // ignore bootstrap fallback errors
+  }
+}
+
+onSnapshot(siteDocRef, (snap) => {
+  if (snap.exists()) {
+    const data = snap.data();
+    recruitStatus = typeof data.recruitStatus === 'string' && data.recruitStatus.trim()
+      ? data.recruitStatus.trim()
+      : DEFAULT_RECRUIT_STATUS;
+  } else {
+    recruitStatus = DEFAULT_RECRUIT_STATUS;
+  }
   renderRecruitStatus();
-  renderHomeArtists();
 });
+
+onSnapshot(artistsColRef, (snap) => {
+  if (!snap.empty) {
+    usingLegacyArtists = false;
+    const nextArtists = snap.docs
+      .map((artistDoc) => normalizeArtist(artistDoc.data(), artistDoc.id))
+      .sort((a, b) => (a.order || 0) - (b.order || 0));
+    applyArtistsToUi(nextArtists);
+    return;
+  }
+
+  if (!usingLegacyArtists) {
+    const cached = getCachedArtists().map((item, idx) => {
+      const next = normalizeArtist(item, item && item.id ? String(item.id) : generateArtistId());
+      if (!Number.isFinite(next.order)) next.order = idx;
+      return next;
+    });
+    applyArtistsToUi(cached);
+  }
+}, () => {
+  const cached = getCachedArtists().map((item, idx) => {
+    const next = normalizeArtist(item, item && item.id ? String(item.id) : generateArtistId());
+    if (!Number.isFinite(next.order)) next.order = idx;
+    return next;
+  });
+  applyArtistsToUi(cached);
+});
+
+bootstrapLegacyIfNeeded();
 
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeArtistPanel();

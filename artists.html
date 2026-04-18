@@ -305,11 +305,54 @@ body.admin-mode .detail-panel { display:none; }
 
 <script type="module">
 import { firebaseApp, firebaseReady, artistsDocPath } from './firebase-config.js';
-import { getFirestore, doc, onSnapshot, setDoc } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js';
+import { getFirestore, doc, collection, onSnapshot, setDoc, getDoc, getDocs, deleteDoc } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js';
 
 let artists = [];
 let selectedAdminIdx = -1;
 const isAdmin = new URLSearchParams(location.search).has('admin');
+let usingLegacyArtists = false;
+
+const db = firebaseReady && firebaseApp ? getFirestore(firebaseApp) : null;
+const siteDocRef = db ? doc(db, artistsDocPath.collection, artistsDocPath.document) : null;
+const artistsColRef = siteDocRef ? collection(siteDocRef, 'artists') : null;
+
+function generateArtistId() {
+  if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+    return window.crypto.randomUUID();
+  }
+  return `artist_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function normalizeArtist(raw, fallbackId = '') {
+  const item = raw && typeof raw === 'object' ? raw : {};
+  const works = Array.isArray(item.works) ? [...item.works] : [null, null, null, null, null, null];
+  while (works.length < 6) works.push(null);
+  return {
+    id: String(item.id || fallbackId || generateArtistId()),
+    name: String(item.name || '작가명'),
+    badge: String(item.badge || '작가'),
+    icon: String(item.icon || '🎨'),
+    cardDesc: String(item.cardDesc || '작가 소개 문구입니다.'),
+    tags: Array.isArray(item.tags) ? item.tags.map((t) => String(t)).filter(Boolean) : [],
+    bio: String(item.bio || ''),
+    sns: Array.isArray(item.sns) ? item.sns : [],
+    characterImg: item.characterImg ? String(item.characterImg) : null,
+    works: works.map((w) => (w ? String(w) : null)),
+    workIcons: Array.isArray(item.workIcons) && item.workIcons.length === 6
+      ? item.workIcons.map((w) => String(w || '🖼'))
+      : ['🖼', '✨', '🌟', '🎨', '💫', '🌙'],
+    order: Number.isFinite(Number(item.order)) ? Number(item.order) : 0,
+  };
+}
+
+async function migrateLegacyArtistsToCollection(items) {
+  if (!artistsColRef || !Array.isArray(items) || !items.length) return;
+  for (let i = 0; i < items.length; i += 1) {
+    const artist = normalizeArtist(items[i], items[i] && items[i].id ? String(items[i].id) : generateArtistId());
+    artist.order = i;
+    await setDoc(doc(artistsColRef, artist.id), artist, { merge: true });
+  }
+}
 
 function isValidSnsUrl(url) {
   if (typeof url !== 'string') return false;
@@ -468,6 +511,7 @@ function adminUploadCharacterImage(event) {
 
 function adminAddArtist() {
   artists.push({
+    id: generateArtistId(),
     name: '새 작가',
     badge: '일러스트',
     icon: '🎨',
@@ -478,6 +522,7 @@ function adminAddArtist() {
     characterImg: null,
     works: [null, null, null, null, null, null],
     workIcons: ['🖼', '✨', '🌟', '🎨', '💫', '🌙'],
+    order: artists.length,
   });
   adminSelectArtist(artists.length - 1);
   renderArtists();
@@ -485,6 +530,7 @@ function adminAddArtist() {
 
 async function adminSaveArtist() {
   if (selectedAdminIdx < 0 || !artists[selectedAdminIdx]) return;
+  if (!artistsColRef || !siteDocRef) return;
   const t = artists[selectedAdminIdx];
   t.name = document.getElementById('aName').value.trim() || '작가명';
   t.badge = document.getElementById('aBadge').value.trim() || '작가';
@@ -500,7 +546,13 @@ async function adminSaveArtist() {
   );
   if (!Array.isArray(t.works)) t.works = [null, null, null, null, null, null];
   if (!Array.isArray(t.workIcons)) t.workIcons = ['🖼', '✨', '🌟', '🎨', '💫', '🌙'];
-  await setDoc(doc(getFirestore(firebaseApp), artistsDocPath.collection, artistsDocPath.document), { items: artists }, { merge: true });
+  if (usingLegacyArtists) {
+    await migrateLegacyArtistsToCollection(artists);
+    usingLegacyArtists = false;
+  }
+  t.order = selectedAdminIdx;
+  await setDoc(doc(artistsColRef, t.id), t, { merge: true });
+  await setDoc(siteDocRef, { updatedAt: Date.now() }, { merge: true });
   renderArtists();
   renderAdminList();
   alert('저장 완료');
@@ -508,10 +560,14 @@ async function adminSaveArtist() {
 
 async function adminDeleteArtist() {
   if (selectedAdminIdx < 0 || !artists[selectedAdminIdx]) return;
+  if (!artistsColRef) return;
   if (!confirm('선택한 작가를 삭제할까요?')) return;
+  const target = artists[selectedAdminIdx];
   artists.splice(selectedAdminIdx, 1);
   selectedAdminIdx = -1;
-  await setDoc(doc(getFirestore(firebaseApp), artistsDocPath.collection, artistsDocPath.document), { items: artists }, { merge: true });
+  if (target && target.id) {
+    await deleteDoc(doc(artistsColRef, target.id));
+  }
   renderArtists();
   renderAdminList();
 }
@@ -554,16 +610,54 @@ async function boot() {
     return;
   }
 
+  if (!artistsColRef || !siteDocRef) {
+    await loadJsonFallback();
+    return;
+  }
+
   try {
-    const db = getFirestore(firebaseApp);
-    const artistsRef = doc(db, artistsDocPath.collection, artistsDocPath.document);
+    const colSnap = await getDocs(artistsColRef);
+    if (!colSnap.empty) {
+      artists = colSnap.docs
+        .map((artistDoc) => normalizeArtist(artistDoc.data(), artistDoc.id))
+        .sort((a, b) => (a.order || 0) - (b.order || 0));
+      renderArtists();
+      if (isAdmin) {
+        renderAdminList();
+        if (selectedAdminIdx < 0 && artists.length) adminSelectArtist(0);
+      }
+    } else {
+      const legacySnap = await getDoc(siteDocRef);
+      if (legacySnap.exists()) {
+        const legacyData = legacySnap.data();
+        if (Array.isArray(legacyData.items) && legacyData.items.length) {
+          usingLegacyArtists = true;
+          artists = legacyData.items.map((item, idx) => {
+            const next = normalizeArtist(item, item && item.id ? String(item.id) : generateArtistId());
+            next.order = idx;
+            return next;
+          });
+          renderArtists();
+          if (isAdmin) {
+            renderAdminList();
+            if (selectedAdminIdx < 0 && artists.length) adminSelectArtist(0);
+          }
+        } else {
+          await loadJsonFallback();
+        }
+      } else {
+        await loadJsonFallback();
+      }
+    }
 
     onSnapshot(
-      artistsRef,
+      artistsColRef,
       async (snapshot) => {
-        if (snapshot.exists()) {
-          const data = snapshot.data();
-          artists = Array.isArray(data.items) ? data.items : [];
+        if (!snapshot.empty) {
+          usingLegacyArtists = false;
+          artists = snapshot.docs
+            .map((artistDoc) => normalizeArtist(artistDoc.data(), artistDoc.id))
+            .sort((a, b) => (a.order || 0) - (b.order || 0));
           renderArtists();
           if (isAdmin) {
             renderAdminList();
@@ -571,7 +665,9 @@ async function boot() {
           }
           return;
         }
-        await loadJsonFallback();
+        if (!usingLegacyArtists) {
+          await loadJsonFallback();
+        }
       },
       async () => {
         await loadJsonFallback();
