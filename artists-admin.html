@@ -115,10 +115,14 @@ textarea { min-height: 80px; resize: vertical; }
           <input id="snsPixiv" type="text" placeholder="https://www.pixiv.net/users/yourname">
         </div>
         <div class="full">
+          <label>브이젠 URL</label>
+          <input id="snsVgen" type="text" placeholder="https://vgen.co/yourname">
+        </div>
+        <div class="full">
           <label>프로필 이미지 (대표 캐릭터)</label>
           <div style="display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap;">
             <div style="flex:1;min-width:200px;">
-              <input id="characterImg" type="text" placeholder="이미지 URL 직접 입력" style="margin-bottom:8px;">
+              <input id="characterImg" type="text" placeholder="이미지 URL 직접 입력" style="margin-bottom:8px;" oninput="updateProfilePreviewFromUrl(this.value)">
               <label style="display:flex;align-items:center;gap:8px;cursor:pointer;background:rgba(74,128,232,0.15);border:1px solid var(--border);border-radius:10px;padding:10px 14px;transition:all 0.2s;" onmouseover="this.style.background='rgba(74,128,232,0.25)'" onmouseout="this.style.background='rgba(74,128,232,0.15)'">
                 <span style="font-size:18px;">📁</span>
                 <span style="font-size:13px;color:var(--blue-bright);font-weight:700;">파일에서 업로드</span>
@@ -251,22 +255,13 @@ function selectArtist(idx) {
     if (profileImg) profileImg.src = a.characterImg;
     if (profileWrap) profileWrap.style.display = '';
   } else {
-    if (profileWrap) profileWrap.style.display = 'none';
-  }
-  // 프로필 이미지
-  const charImgField = document.getElementById('characterImg');
-  if (charImgField) charImgField.value = a.characterImg || '';
-  const profileWrap = document.getElementById('profilePreviewWrap');
-  const profilePreview = document.getElementById('profilePreview');
-  if (a.characterImg) {
-    if (profilePreview) profilePreview.src = a.characterImg;
-    if (profileWrap) profileWrap.style.display = '';
-  } else {
+    if (profileImg) profileImg.removeAttribute('src');
     if (profileWrap) profileWrap.style.display = 'none';
   }
   document.getElementById('snsTwitter').value = pickSnsUrlByLabel(a.sns, (label) => label.includes('twitter') || label.includes('x'));
   document.getElementById('snsArtmug').value = pickSnsUrlByLabel(a.sns, (label) => label.includes('아트머그') || label.includes('artmug'));
   document.getElementById('snsPixiv').value = pickSnsUrlByLabel(a.sns, (label) => label.includes('pixiv'));
+  document.getElementById('snsVgen').value = pickSnsUrlByLabel(a.sns, (label) => label.includes('브이젠') || label.includes('vgen'));
   renderWorksEditor(a);
   renderList();
 }
@@ -342,6 +337,44 @@ function handleWorkFileChange(idx, event) {
   reader.readAsDataURL(file);
 }
 
+function updateProfilePreviewFromUrl(val) {
+  const trimmed = String(val || '').trim();
+  const profileWrap = document.getElementById('profilePreviewWrap');
+  const profileImg = document.getElementById('profilePreview');
+  if (!profileWrap || !profileImg) return;
+
+  if (!trimmed) {
+    profileImg.removeAttribute('src');
+    profileWrap.style.display = 'none';
+    return;
+  }
+
+  profileImg.src = trimmed;
+  profileWrap.style.display = '';
+}
+
+function handleProfileUpload(event) {
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const dataUrl = e.target && e.target.result ? String(e.target.result) : '';
+    if (!dataUrl) return;
+
+    const input = document.getElementById('characterImg');
+    if (input) input.value = dataUrl;
+    updateProfilePreviewFromUrl(dataUrl);
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearProfile() {
+  const input = document.getElementById('characterImg');
+  if (input) input.value = '';
+  updateProfilePreviewFromUrl('');
+}
+
 function addArtist() {
   const base = {
     name: '새 작가',
@@ -374,10 +407,12 @@ async function saveArtist() {
   const twitter = document.getElementById('snsTwitter').value.trim();
   const artmug = document.getElementById('snsArtmug').value.trim();
   const pixiv = document.getElementById('snsPixiv').value.trim();
+  const vgen = document.getElementById('snsVgen').value.trim();
   const sns = [];
   if (isValidSnsUrl(twitter)) sns.push({ label: '𝕏 Twitter', url: twitter });
   if (isValidSnsUrl(artmug)) sns.push({ label: '아트머그', url: artmug });
   if (isValidSnsUrl(pixiv)) sns.push({ label: 'P Pixiv', url: pixiv });
+  if (isValidSnsUrl(vgen)) sns.push({ label: '브이젠', url: vgen });
   target.sns = sns;
   // 프로필 이미지 저장
   const charImgVal = document.getElementById('characterImg');
@@ -414,6 +449,10 @@ async function deleteArtist() {
     document.getElementById('cardDesc').value = '';
     document.getElementById('tags').value = '';
     document.getElementById('bio').value = '';
+    document.getElementById('snsTwitter').value = '';
+    document.getElementById('snsArtmug').value = '';
+    document.getElementById('snsPixiv').value = '';
+    document.getElementById('snsVgen').value = '';
   } else {
     selectArtist(Math.max(0, selectedIndex - 1));
   }
@@ -467,6 +506,9 @@ window.downloadJson = downloadJson;
 window.importJson = importJson;
 window.selectArtist = selectArtist;
 window.handleWorkFileChange = handleWorkFileChange;
+window.handleProfileUpload = handleProfileUpload;
+window.clearProfile = clearProfile;
+window.updateProfilePreviewFromUrl = updateProfilePreviewFromUrl;
 
 requirePassword();
 loadArtists().then(() => {
