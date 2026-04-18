@@ -983,6 +983,12 @@ footer {
 .admin-title { font-family: var(--serif); font-size: 34px; margin-bottom: 8px; }
 .admin-sub { color: var(--white-dim); margin-bottom: 18px; }
 .admin-toolbar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+.admin-status {
+  width: 100%;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--dim);
+}
 .admin-layout { display: grid; grid-template-columns: 320px 1fr; gap: 14px; }
 .admin-panel { background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 12px; }
 .admin-list { display: flex; flex-direction: column; gap: 8px; max-height: 70vh; overflow-y: auto; }
@@ -1201,9 +1207,10 @@ footer {
     <p class="admin-sub">`?admin` 전용 화면입니다. 저장하면 Firebase에 즉시 반영됩니다.</p>
     <div class="admin-toolbar">
       <button class="btn-glow" onclick="adminAddArtist()">새 작가 추가</button>
-      <button class="btn-outline" onclick="adminSaveArtist()">저장</button>
+      <button id="adminSaveBtn" class="btn-outline" onclick="adminSaveArtist()">저장</button>
       <button class="btn-outline" onclick="adminDeleteArtist()">선택 삭제</button>
       <button class="btn-outline" onclick="location.href=location.pathname">고객 화면 보기</button>
+      <div id="adminSaveStatus" class="admin-status"></div>
     </div>
     <div class="admin-layout">
       <div class="admin-panel"><div id="adminList" class="admin-list"></div></div>
@@ -1496,6 +1503,7 @@ let artists = [];
 let selectedAdminIdx = -1;
 let recruitStatus = DEFAULT_RECRUIT_STATUS;
 let usingLegacyArtists = false;
+let isSavingArtist = false;
 
 function generateArtistId() {
   if (window.crypto && typeof window.crypto.randomUUID === 'function') {
@@ -1684,9 +1692,10 @@ function makeStoragePath(artistId, slot) {
   return `standupp3/artists/${artistId}/${safeSlot}_${stamp}.jpg`;
 }
 
-async function migrateArtistImagesToStorage(artist) {
+async function migrateArtistImagesToStorage(artist, onProgress) {
   const next = { ...artist };
   if (typeof next.characterImg === 'string' && next.characterImg.startsWith('data:image/')) {
+    if (onProgress) onProgress('프로필 이미지 업로드 중...');
     const profilePath = makeStoragePath(next.id, 'profile');
     next.characterImg = await uploadDataUrlToStorage(next.characterImg, profilePath);
     next.profileStoragePath = profilePath;
@@ -1700,6 +1709,7 @@ async function migrateArtistImagesToStorage(artist) {
   for (let i = 0; i < works.length; i += 1) {
     const work = works[i];
     if (typeof work === 'string' && work.startsWith('data:image/')) {
+      if (onProgress) onProgress(`작품 이미지 ${i + 1}/6 업로드 중...`);
       const workPath = makeStoragePath(next.id, `work_${i + 1}`);
       works[i] = await uploadDataUrlToStorage(work, workPath);
       storagePaths[i] = workPath;
@@ -2007,8 +2017,32 @@ function adminAddArtist() {
 }
 
 async function adminSaveArtist() {
+  if (isSavingArtist) return;
+  const saveBtn = document.getElementById('adminSaveBtn');
+  const saveStatus = document.getElementById('adminSaveStatus');
+  const setSaveStatus = (message) => {
+    if (saveStatus) saveStatus.textContent = message || '';
+  };
+  isSavingArtist = true;
+  if (saveBtn) {
+    saveBtn.disabled = true;
+    saveBtn.textContent = '저장 중...';
+  }
+  setSaveStatus('저장 준비 중...');
+
   recruitStatus = document.getElementById('aRecruitStatus').value.trim() || DEFAULT_RECRUIT_STATUS;
   renderRecruitStatus();
+  if (selectedAdminIdx < 0 || !artists[selectedAdminIdx]) {
+    alert('저장할 작가를 먼저 선택해주세요.');
+    isSavingArtist = false;
+    if (saveBtn) {
+      saveBtn.disabled = false;
+      saveBtn.textContent = '저장';
+    }
+    setSaveStatus('');
+    return;
+  }
+
   if (selectedAdminIdx >= 0 && artists[selectedAdminIdx]) {
     const t = artists[selectedAdminIdx];
     t.name = document.getElementById('aName').value.trim() || '작가명';
@@ -2033,27 +2067,44 @@ async function adminSaveArtist() {
   }
   try {
     if (usingLegacyArtists) {
+      setSaveStatus('기존 데이터 형식 변환 중...');
       await migrateLegacyArtistsToCollection(artists);
       usingLegacyArtists = false;
     }
 
     const source = artists[selectedAdminIdx];
-    const withUploadedImages = await migrateArtistImagesToStorage(source);
+    setSaveStatus('이미지 업로드 확인 중...');
+    const withUploadedImages = await migrateArtistImagesToStorage(source, setSaveStatus);
     withUploadedImages.order = selectedAdminIdx;
     artists[selectedAdminIdx] = withUploadedImages;
 
     const payload = sanitizeForFirestore(withUploadedImages);
+    setSaveStatus('작가 정보 저장 중...');
     await setDoc(doc(artistsColRef, withUploadedImages.id), payload, { merge: true });
+    setSaveStatus('사이트 공통 정보 저장 중...');
     await setDoc(siteDocRef, { recruitStatus }, { merge: true });
     cacheArtists(artists);
     renderHomeArtists();
     renderAdminList();
+    setSaveStatus('저장 완료');
     alert('저장 완료: 고객 화면에 반영됩니다.');
   } catch (e) {
     console.error('Firestore save failed:', e);
     const errCode = e && e.code ? String(e.code) : 'unknown';
     const errMessage = e && e.message ? String(e.message) : '';
+    setSaveStatus(`저장 실패 (${errCode})`);
     alert(`저장 실패 (${errCode})\n${errMessage}\nFirestore 권한(규칙) 또는 연결 상태를 확인해주세요.`);
+  } finally {
+    isSavingArtist = false;
+    if (saveBtn) {
+      saveBtn.disabled = false;
+      saveBtn.textContent = '저장';
+    }
+    if (saveStatus && saveStatus.textContent === '저장 완료') {
+      setTimeout(() => {
+        if (!isSavingArtist) setSaveStatus('');
+      }, 2000);
+    }
   }
 }
 
