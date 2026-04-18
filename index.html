@@ -1517,6 +1517,21 @@ function buildAdminSns(twitterUrl, artmugUrl, pixivUrl, vgenUrl) {
   return next;
 }
 
+function sanitizeForFirestore(value) {
+  if (value === undefined) return null;
+  if (value === null) return null;
+  if (Array.isArray(value)) return value.map((item) => sanitizeForFirestore(item));
+  if (typeof value === 'object') {
+    const out = {};
+    Object.entries(value).forEach(([key, val]) => {
+      const cleaned = sanitizeForFirestore(val);
+      if (cleaned !== undefined) out[key] = cleaned;
+    });
+    return out;
+  }
+  return value;
+}
+
 function renderRecruitStatus() {
   const aboutRecruitEl = document.getElementById('aboutRecruitStatus');
   if (aboutRecruitEl) aboutRecruitEl.textContent = recruitStatus || DEFAULT_RECRUIT_STATUS;
@@ -1808,7 +1823,8 @@ async function adminSaveArtist() {
     if (!Array.isArray(t.workIcons)) t.workIcons = ['🖼', '✨', '🌟', '🎨', '💫', '🌙'];
   }
   try {
-    await setDoc(artistsRef, { items: artists, recruitStatus }, { merge: true });
+    const payload = sanitizeForFirestore({ items: artists, recruitStatus });
+    await setDoc(artistsRef, payload, { merge: true });
     cacheArtists(artists);
     renderHomeArtists();
     renderAdminList();
@@ -1826,7 +1842,8 @@ async function adminDeleteArtist() {
   artists.splice(selectedAdminIdx, 1);
   selectedAdminIdx = -1;
   try {
-    await setDoc(artistsRef, { items: artists, recruitStatus }, { merge: true });
+    const payload = sanitizeForFirestore({ items: artists, recruitStatus });
+    await setDoc(artistsRef, payload, { merge: true });
     cacheArtists(artists);
     renderHomeArtists();
     renderAdminList();
