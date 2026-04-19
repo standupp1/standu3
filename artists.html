@@ -357,13 +357,41 @@
         .modal-works-title { font-size: 1.2rem; margin-bottom: 20px; border-bottom: 1px solid var(--card-border); padding-bottom: 10px; font-weight: 700; letter-spacing: 1px; }
         .modal-works-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
         .modal-work-item { aspect-ratio: 1; border-radius: 12px; overflow: hidden; background: rgba(255,255,255,0.02); border: 1px solid var(--card-border); display: flex; justify-content: center; align-items: center; color: var(--text-muted); font-size: 2rem; }
-        .modal-work-item img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s; }
+        .modal-work-item img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s; cursor: pointer; }
         .modal-work-item img:hover { transform: scale(1.05); }
         @media (max-width: 768px) {
             .modal-header { flex-direction: column; align-items: center; text-align: center; }
             .modal-works-grid { grid-template-columns: repeat(2, 1fr); }
             .modal-sns { justify-content: center; }
             .modal-content { padding: 30px 20px; }
+        }
+
+        /* Fullscreen Image Viewer */
+        .image-viewer-overlay {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.95);
+            z-index: 1000;
+            display: none; align-items: center; justify-content: center;
+            opacity: 0; transition: opacity 0.3s ease;
+            padding: 20px;
+        }
+        .image-viewer-overlay.active { display: flex; opacity: 1; }
+        .image-viewer-img { max-width: 100%; max-height: 100%; object-fit: contain; transform: scale(0.9); transition: transform 0.3s ease; }
+        .image-viewer-overlay.active .image-viewer-img { transform: scale(1); }
+        .image-viewer-close { position: absolute; top: 20px; right: 25px; background: none; border: none; color: #fff; font-size: 30px; cursor: pointer; transition: color 0.3s; }
+        .image-viewer-close:hover { color: var(--accent-1); }
+
+        /* Prevent Image Theft */
+        img {
+            -webkit-user-drag: none;
+            -khtml-user-drag: none;
+            -moz-user-drag: none;
+            -o-user-drag: none;
+            user-drag: none;
+            user-select: none;
+            -moz-user-select: none;
+            -webkit-user-select: none;
+            -ms-user-select: none;
         }
 
         @media (max-width: 768px) {
@@ -430,6 +458,12 @@
                 </div>
             </div>
         </div>
+    </div>
+
+    <!-- Image Viewer Modal -->
+    <div class="image-viewer-overlay" id="imageViewer" onclick="closeImageViewer(event)">
+        <button class="image-viewer-close" onclick="closeImageViewer()"><i class="fa-solid fa-xmark"></i></button>
+        <img src="" id="imageViewerImg" class="image-viewer-img" onclick="event.stopPropagation()">
     </div>
 
     <script>
@@ -585,7 +619,7 @@
             let worksHtml = '';
             for(let i=0; i<6; i++) {
                 if(works[i]) {
-                    worksHtml += `<div class="modal-work-item"><img src="${works[i]}" onclick="window.open('${works[i]}', '_blank')"></div>`;
+                    worksHtml += `<div class="modal-work-item"><img src="${works[i]}" onclick="openImageViewer('${works[i]}')"></div>`;
                 } else {
                     worksHtml += `<div class="modal-work-item">🖼</div>`;
                 }
@@ -602,9 +636,30 @@
             document.body.style.overflow = '';
         };
 
+        window.openImageViewer = function(src) {
+            document.getElementById('imageViewerImg').src = src;
+            document.getElementById('imageViewer').classList.add('active');
+        };
+
+        window.closeImageViewer = function(e) {
+            if(e && e.target !== e.currentTarget && !e.target.classList.contains('image-viewer-close') && !e.target.closest('.image-viewer-close')) return;
+            document.getElementById('imageViewer').classList.remove('active');
+        };
+
         // Close on Escape key
         document.addEventListener('keydown', e => {
-            if(e.key === 'Escape') window.closeModal();
+            if(e.key === 'Escape') {
+                if(document.getElementById('imageViewer').classList.contains('active')) {
+                    window.closeImageViewer();
+                } else {
+                    window.closeModal();
+                }
+            }
+        });
+
+        // Prevent image right-click
+        document.addEventListener('contextmenu', e => {
+            if(e.target.tagName === 'IMG') e.preventDefault();
         });
 
         loadAndRenderCreators();
