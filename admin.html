@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>STAND UP | 작가 관리 시스템</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet">
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.1/dist/browser-image-compression.js"></script>
+    <style>
+        body { font-family: 'Pretendard', sans-serif; background-color: #f3f4f6; }
+        /* 스크롤바 커스텀 */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="p-4 md:p-8 text-gray-800">
+    <div class="max-w-7xl mx-auto">
+        <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">STAND UP 작가 관리</h1>
+                <p class="text-sm text-gray-500 mt-1">Firebase 연동 시 즉시 반영되며, 미연결 시 JSON 파일로 데이터를 관리할 수 있습니다.</p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+                <button onclick="addArtist()" class="px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition">새 작가 추가</button>
+                <button onclick="saveArtist()" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition shadow-sm shadow-blue-200">현재 내용 저장</button>
+                <button onclick="downloadJson()" class="px-4 py-2 border border-gray-200 bg-white text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition">JSON 다운로드</button>
+                <button onclick="document.getElementById('jsonUpload').click()" class="px-4 py-2 border border-gray-200 bg-white text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition">JSON 불러오기</button>
+                <input id="jsonUpload" type="file" accept=".json,application/json" class="hidden" onchange="importJson(event)">
+                <button onclick="deleteArtist()" class="px-4 py-2 border border-red-200 bg-red-50 text-red-600 rounded-lg text-sm font-medium hover:bg-red-100 transition">삭제</button>
+            </div>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <!-- 왼쪽: 작가 목록 리스트 -->
+            <div class="lg:col-span-3 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col h-[800px]">
+                <div class="p-4 border-b border-gray-100 bg-gray-50/50">
+                    <h2 class="font-semibold text-gray-700">등록된 작가 <span id="artistCount" class="text-blue-600 font-bold ml-1">0</span></h2>
+                </div>
+                <div id="artistList" class="flex-1 overflow-y-auto p-3 space-y-2">
+                    <!-- JS Rendering -->
+                </div>
+            </div>
+
+            <!-- 오른쪽: 작가 정보 수정 폼 -->
+            <div class="lg:col-span-9 bg-white rounded-2xl shadow-sm border border-gray-100 p-6 h-[800px] overflow-y-auto">
+                <h2 class="text-xl font-bold mb-6 pb-4 border-b border-gray-100">작가 상세 정보</h2>
+                
+                <div id="emptyState" class="hidden text-center py-20 text-gray-400">
+                    <svg class="mx-auto h-12 w-12 mb-4 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+                    <p>작가를 선택하거나 새로 추가해주세요.</p>
+                </div>
+
+                <div id="formContent" class="space-y-8">
+                    <!-- 기본 정보 -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-1">작가명</label>
+                            <input id="name" type="text" class="w-full rounded-lg border-gray-300 bg-gray-50 border p-2.5 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-1">분류 배지</label>
+                            <input id="badge" type="text" placeholder="예: 일러스트, 웹툰" class="w-full rounded-lg border-gray-300 bg-gray-50 border p-2.5 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-1">태그 (쉼표로 구분)</label>
+                            <input id="tags" type="text" placeholder="예: 캐릭터, 팬아트" class="w-full rounded-lg border-gray-300 bg-gray-50 border p-2.5 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-1">카드 짧은 소개</label>
+                            <input id="cardDesc" type="text" placeholder="리스트 카드에 노출될 한 줄 소개" class="w-full rounded-lg border-gray-300 bg-gray-50 border p-2.5 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition outline-none">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-bold text-gray-700 mb-1">상세 소개 (줄바꿈 가능)</label>
+                            <textarea id="bio" rows="4" class="w-full rounded-lg border-gray-300 bg-gray-50 border p-2.5 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition outline-none resize-none"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- SNS 링크 -->
+                    <div>
+                        <h3 class="text-sm font-bold text-gray-700 mb-3 border-b pb-2">SNS & 포트폴리오 링크</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs text-gray-500 mb-1">X (Twitter)</label>
+                                <input id="snsTwitter" type="url" placeholder="https://x.com/..." class="w-full rounded-md border-gray-200 border p-2 text-sm outline-none focus:border-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-500 mb-1">Pixiv</label>
+                                <input id="snsPixiv" type="url" placeholder="https://pixiv.net/..." class="w-full rounded-md border-gray-200 border p-2 text-sm outline-none focus:border-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-500 mb-1">Artmug (아트머그)</label>
+                                <input id="snsArtmug" type="url" placeholder="https://artmug.kr/..." class="w-full rounded-md border-gray-200 border p-2 text-sm outline-none focus:border-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-500 mb-1">Vgen (브이젠)</label>
+                                <input id="snsVgen" type="url" placeholder="https://vgen.co/..." class="w-full rounded-md border-gray-200 border p-2 text-sm outline-none focus:border-blue-500">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 이미지 업로드 -->
+                    <div>
+                        <h3 class="text-sm font-bold text-gray-700 mb-3 border-b pb-2">이미지 <span class="text-blue-500 text-xs font-normal ml-2">※ 모든 이미지는 업로드 시 자동 압축됩니다 (최대 500KB)</span></h3>
+                        
+                        <div class="space-y-6">
+                            <!-- 프로필 이미지 -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">프로필 / 메인 캐릭터</label>
+                                <div class="flex gap-4 items-start">
+                                    <div class="flex-1">
+                                        <input type="file" accept="image/*" onchange="handleProfileUpload(event)" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer">
+                                        <input id="characterImg" type="hidden">
+                                        <div id="profileStatus" class="text-xs mt-2 hidden"></div>
+                                    </div>
+                                    <div id="profilePreviewWrap" class="hidden relative w-24 h-24 rounded-lg overflow-hidden border border-gray-200 bg-gray-50 shrink-0">
+                                        <img id="profilePreview" class="w-full h-full object-cover">
+                                        <button onclick="clearProfile()" class="absolute inset-0 bg-black/50 text-white text-xs opacity-0 hover:opacity-100 transition flex items-center justify-center">삭제</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 대표 작품 이미지 6개 -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">대표 작품 (최대 6개)</label>
+                                <div id="worksEditor" class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                    <!-- JS Rendered -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase & Logic -->
+    <script type="module">
+        // --- Firebase Configuration ---
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+        import { getFirestore, doc, getDoc, setDoc } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js';
+        
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+        const isFirebaseReady = firebaseConfig.apiKey !== "YOUR_API_KEY";
+        let db = null;
+        let artistsRef = null;
+        if(isFirebaseReady) {
+            const app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            artistsRef = doc(db, 'settings', 'artistsData');
+        }
+
+        // --- State ---
+        let artists = [];
+        let selectedIndex = -1;
+        const DATA_FILE = 'artists-data.json';
+        const DEFAULT_ARTISTS = [
+            { name: '스탠드업 작가', badge: '일러스트', icon: '🎨', cardDesc: '매력적인 캐릭터를 그립니다.', tags: ['일러스트', '캐릭터'], bio: '기본 데모 작가입니다.', sns: [], characterImg: null, works: [null, null, null, null, null, null] }
+        ];
+
+        // --- Data Loading ---
+        async function loadArtists() {
+            if (isFirebaseReady && artistsRef) {
+                try {
+                    const snap = await getDoc(artistsRef);
+                    if (snap.exists() && Array.isArray(snap.data().items)) {
+                        artists = snap.data().items;
+                        return;
+                    }
+                } catch(e) { console.error("Firebase load err", e); }
+            }
+            // Fallback to JSON or Default
+            try {
+                const res = await fetch(DATA_FILE, { cache: 'no-store' });
+                if(res.ok) {
+                    const parsed = await res.json();
+                    artists = Array.isArray(parsed) ? parsed : [...DEFAULT_ARTISTS];
+                    return;
+                }
+            } catch(e) {}
+            artists = [...DEFAULT_ARTISTS];
+        }
+
+        // --- Rendering ---
+        function renderList() {
+            const list = document.getElementById('artistList');
+            document.getElementById('artistCount').innerText = artists.length;
+            
+            list.innerHTML = artists.map((a, idx) => `
+                <div onclick="selectArtist(${idx})" class="p-3 rounded-xl border ${idx === selectedIndex ? 'border-blue-500 bg-blue-50/50 shadow-sm' : 'border-transparent hover:bg-gray-50'} cursor-pointer transition">
+                    <div class="font-bold text-gray-800 text-sm">${a.icon || '🎨'} ${a.name || '이름 없음'}</div>
+                    <div class="text-xs text-gray-500 mt-1">${a.badge || '미분류'} · ${(a.tags || []).slice(0,2).join(', ')}</div>
+                </div>
+            `).join('');
+
+            const formContent = document.getElementById('formContent');
+            const emptyState = document.getElementById('emptyState');
+            if(selectedIndex >= 0 && artists[selectedIndex]) {
+                formContent.classList.remove('hidden');
+                emptyState.classList.add('hidden');
+            } else {
+                formContent.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+            }
+        }
+
+        function pickSns(snsArray, keywords) {
+            if(!Array.isArray(snsArray)) return '';
+            const item = snsArray.find(s => keywords.some(k => s.label.toLowerCase().includes(k)));
+            return item ? item.url : '';
+        }
+
+        window.selectArtist = function(idx) {
+            selectedIndex = idx;
+            const a = artists[idx];
+            if (!a) return;
+
+            document.getElementById('name').value = a.name || '';
+            document.getElementById('badge').value = a.badge || '';
+            document.getElementById('tags').value = (a.tags || []).join(', ');
+            document.getElementById('cardDesc').value = a.cardDesc || '';
+            document.getElementById('bio').value = a.bio || '';
+            
+            document.getElementById('snsTwitter').value = pickSns(a.sns, ['twitter', 'x']);
+            document.getElementById('snsPixiv').value = pickSns(a.sns, ['pixiv']);
+            document.getElementById('snsArtmug').value = pickSns(a.sns, ['artmug', '아트머그']);
+            document.getElementById('snsVgen').value = pickSns(a.sns, ['vgen', '브이젠']);
+
+            // Profile Image
+            document.getElementById('characterImg').value = a.characterImg || '';
+            const pWrap = document.getElementById('profilePreviewWrap');
+            const pImg = document.getElementById('profilePreview');
+            if(a.characterImg) { pImg.src = a.characterImg; pWrap.classList.remove('hidden'); }
+            else { pImg.src = ''; pWrap.classList.add('hidden'); }
+            document.getElementById('profileStatus').classList.add('hidden');
+
+            renderWorksEditor(a);
+            renderList();
+        };
+
+        function renderWorksEditor(artist) {
+            const editor = document.getElementById('worksEditor');
+            const works = Array.isArray(artist.works) ? [...artist.works] : [];
+            while(works.length < 6) works.push(null);
+
+            editor.innerHTML = works.map((url, i) => {
+                const hasImg = !!url;
+                return `
+                <div class="relative aspect-square rounded-xl border border-dashed ${hasImg ? 'border-gray-200' : 'border-gray-300 hover:border-blue-400'} bg-gray-50 flex items-center justify-center overflow-hidden group">
+                    ${hasImg 
+                        ? `<img src="${url}" class="w-full h-full object-cover">
+                           <button onclick="clearWork(${i})" class="absolute inset-0 bg-black/50 text-white text-xs opacity-0 group-hover:opacity-100 transition flex items-center justify-center">삭제</button>
+                           <input type="hidden" id="workDataUrl${i}" value="${url}">` 
+                        : `<label class="cursor-pointer flex flex-col items-center justify-center w-full h-full text-gray-400 hover:text-blue-500 transition">
+                             <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                             <span class="text-xs">작품 ${i+1} 추가</span>
+                             <input type="file" accept="image/*" class="hidden" onchange="handleWorkUpload(${i}, event)">
+                           </label>
+                           <input type="hidden" id="workDataUrl${i}" value="">`
+                    }
+                    <div id="workStatus${i}" class="absolute bottom-1 left-1 right-1 bg-black/70 text-white text-[10px] p-1 rounded hidden text-center"></div>
+                </div>`;
+            }).join('');
+        }
+
+        // --- Image Compression Logic ---
+        const compressionOptions = { maxSizeMB: 0.5, maxWidthOrHeight: 1200, useWebWorker: true };
+
+        async function compressAndConvertToBase64(file, statusEl) {
+            if(statusEl) { statusEl.innerText = "압축 중..."; statusEl.classList.remove('hidden'); }
+            try {
+                const compressedFile = await imageCompression(file, compressionOptions);
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = e => {
+                        if(statusEl) { statusEl.innerText = "완료!"; setTimeout(()=>statusEl.classList.add('hidden'), 1500); }
+                        resolve(e.target.result);
+                    };
+                    reader.onerror = reject;
+                    reader.readAsDataURL(compressedFile);
+                });
+            } catch (err) {
+                if(statusEl) { statusEl.innerText = "오류 발생"; }
+                console.error(err);
+                return null;
+            }
+        }
+
+        window.handleProfileUpload = async function(e) {
+            const file = e.target.files[0];
+            if(!file) return;
+            const b64 = await compressAndConvertToBase64(file, document.getElementById('profileStatus'));
+            if(b64) {
+                document.getElementById('characterImg').value = b64;
+                document.getElementById('profilePreview').src = b64;
+                document.getElementById('profilePreviewWrap').classList.remove('hidden');
+            }
+            e.target.value = ''; // Reset input
+        };
+
+        window.clearProfile = function() {
+            document.getElementById('characterImg').value = '';
+            document.getElementById('profilePreviewWrap').classList.add('hidden');
+        };
+
+        window.handleWorkUpload = async function(idx, e) {
+            const file = e.target.files[0];
+            if(!file) return;
+            const b64 = await compressAndConvertToBase64(file, document.getElementById(`workStatus${idx}`));
+            if(b64) {
+                if(artists[selectedIndex]) {
+                    if(!artists[selectedIndex].works) artists[selectedIndex].works = [];
+                    artists[selectedIndex].works[idx] = b64;
+                    renderWorksEditor(artists[selectedIndex]);
+                }
+            }
+        };
+
+        window.clearWork = function(idx) {
+            if(artists[selectedIndex] && artists[selectedIndex].works) {
+                artists[selectedIndex].works[idx] = null;
+                renderWorksEditor(artists[selectedIndex]);
+            }
+        };
+
+        // --- CRUD Actions ---
+        window.addArtist = function() {
+            artists.unshift({
+                name: '새 작가', badge: '일러스트', icon: '🎨', cardDesc: '', tags: [], bio: '', sns: [], characterImg: null, works: []
+            });
+            selectArtist(0);
+        };
+
+        window.deleteArtist = async function() {
+            if(selectedIndex < 0) return;
+            if(!confirm("정말 삭제하시겠습니까?")) return;
+            artists.splice(selectedIndex, 1);
+            selectedIndex = artists.length > 0 ? 0 : -1;
+            await saveToFirebase();
+            renderList();
+            if(selectedIndex >= 0) selectArtist(0);
+        };
+
+        window.saveArtist = async function() {
+            if (selectedIndex < 0 || !artists[selectedIndex]) return;
+            const target = artists[selectedIndex];
+            
+            target.name = document.getElementById('name').value.trim();
+            target.badge = document.getElementById('badge').value.trim();
+            target.tags = document.getElementById('tags').value.split(',').map(v=>v.trim()).filter(Boolean);
+            target.cardDesc = document.getElementById('cardDesc').value.trim();
+            target.bio = document.getElementById('bio').value.trim();
+            target.characterImg = document.getElementById('characterImg').value || null;
+            
+            const sns = [];
+            const addSns = (label, url) => { if(url.trim()) sns.push({label, url: url.trim()}); };
+            addSns('𝕏 Twitter', document.getElementById('snsTwitter').value);
+            addSns('P Pixiv', document.getElementById('snsPixiv').value);
+            addSns('아트머그', document.getElementById('snsArtmug').value);
+            addSns('브이젠', document.getElementById('snsVgen').value);
+            target.sns = sns;
+            
+            // Works are already updated directly via handleWorkUpload, but let's sync just in case
+            for(let i=0; i<6; i++) {
+                const el = document.getElementById(`workDataUrl${i}`);
+                if(el) target.works[i] = el.value || null;
+            }
+
+            const success = await saveToFirebase();
+            renderList();
+            if(success) alert('저장되었습니다!');
+            else alert('Firebase 미설정 상태입니다. 필요시 JSON 다운로드를 이용하세요.');
+        };
+
+        async function saveToFirebase() {
+            if (!isFirebaseReady || !artistsRef) return false;
+            try { await setDoc(artistsRef, { items: artists }, { merge: true }); return true; } 
+            catch(e) { console.error(e); return false; }
+        }
+
+        window.downloadJson = function() {
+            const json = JSON.stringify(artists, null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = 'artists-data.json';
+            a.click(); URL.revokeObjectURL(url);
+        };
+
+        window.importJson = function(e) {
+            const file = e.target.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = e => {
+                try {
+                    const parsed = JSON.parse(e.target.result);
+                    if(Array.isArray(parsed)) {
+                        artists = parsed;
+                        selectedIndex = artists.length > 0 ? 0 : -1;
+                        renderList();
+                        if(selectedIndex >= 0) selectArtist(0);
+                        alert('불러오기 완료!');
+                    }
+                } catch(err) { alert('잘못된 JSON 파일입니다.'); }
+            };
+            reader.readAsText(file);
+            e.target.value = '';
+        };
+
+        // Initialize
+        loadArtists().then(() => {
+            renderList();
+            if(artists.length > 0) selectArtist(0);
+        });
+    </script>
+</body>
+</html>
