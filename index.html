@@ -269,15 +269,12 @@
             flex-direction: column;
             justify-content: flex-end;
             padding: 30px 20px;
-            opacity: 0;
-            transition: opacity 0.4s ease;
+            opacity: 1;
         }
         .creator-card:hover .creator-img { transform: scale(1.05); }
-        .creator-card:hover .creator-overlay { opacity: 1; }
         
-        .creator-name { font-size: 1.5rem; font-weight: 800; color: #fff; margin-bottom: 5px; transform: translateY(20px); transition: transform 0.4s ease; }
-        .creator-tags { font-size: 0.9rem; color: var(--accent-1); transform: translateY(20px); transition: transform 0.4s ease 0.1s; }
-        .creator-card:hover .creator-name, .creator-card:hover .creator-tags { transform: translateY(0); }
+        .creator-name { font-size: 1.5rem; font-weight: 800; color: #fff; margin-bottom: 5px; }
+        .creator-tags { font-size: 0.9rem; color: var(--accent-1); }
 
         /* Contact Section */
         .contact { background: rgba(255,255,255,0.02); text-align: center; border-top: 1px solid var(--card-border); }
