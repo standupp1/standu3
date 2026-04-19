@@ -281,6 +281,17 @@
 
         /* Contact Section */
         .contact { background: rgba(255,255,255,0.02); text-align: center; border-top: 1px solid var(--card-border); }
+        .contact-form-wrap { max-width: 600px; margin: 0 auto; margin-top: 40px; text-align: left; }
+        .form-row { display: flex; gap: 15px; margin-bottom: 15px; }
+        .form-row .contact-input { flex: 1; }
+        .contact-input { width: 100%; padding: 15px 20px; background: rgba(255,255,255,0.05); border: 1px solid var(--card-border); border-radius: 12px; color: #fff; font-family: 'Pretendard', sans-serif; font-size: 1rem; outline: none; transition: border-color 0.3s; }
+        .contact-input.full-width { margin-bottom: 15px; }
+        .contact-input:focus { border-color: var(--accent-1); }
+        .contact-input::placeholder { color: rgba(255,255,255,0.3); }
+        .textarea { height: 150px; resize: none; margin-bottom: 20px; }
+        .form-submit-btn { width: 100%; border: none; cursor: pointer; justify-content: center; font-size: 1.1rem; }
+        @media (max-width: 768px) { .form-row { flex-direction: column; gap: 15px; } }
+        
         .social-links { display: flex; justify-content: center; gap: 20px; margin-top: 40px; }
         .social-btn {
             width: 50px; height: 50px;
@@ -411,9 +422,20 @@
         <div class="section-header reveal">
             <span class="section-tag">CONTACT</span>
             <h2 class="section-title">함께 시작해요.</h2>
-            <p class="section-desc">작가 지원 및 협업 문의는 아래 채널을 통해 편하게 보내주세요.<br>빠른 시간 내에 답변 드리겠습니다.</p>
+            <p class="section-desc">작가 지원 및 협업 문의는 아래 양식으로 편하게 보내주세요.<br>빠른 시간 내에 답변 드리겠습니다.</p>
         </div>
-        <a href="mailto:contact@standupkr.com" class="btn btn-primary reveal">협업 문의하기 <i class="fa-solid fa-paper-plane"></i></a>
+        
+        <div class="contact-form-wrap reveal">
+            <form id="contactForm" onsubmit="handleContactSubmit(event)">
+                <div class="form-row">
+                    <input type="text" id="contactName" placeholder="작가명 / 활동명" required class="contact-input">
+                    <input type="email" id="contactEmail" placeholder="답변 받을 이메일 주소" required class="contact-input">
+                </div>
+                <input type="text" id="contactPlatform" placeholder="주요 활동 플랫폼 (예: 트위터, 픽시브 등)" class="contact-input full-width">
+                <textarea id="contactMessage" placeholder="문의 내용 (지원 포트폴리오 링크 등)" required class="contact-input textarea"></textarea>
+                <button type="submit" id="contactSubmitBtn" class="btn btn-primary form-submit-btn">문의 보내기 <i class="fa-solid fa-paper-plane"></i></button>
+            </form>
+        </div>
         
         <div class="social-links reveal">
             <a href="#" class="social-btn"><i class="fa-brands fa-twitter"></i></a>
@@ -467,12 +489,12 @@
         // --- Firebase Configuration ---
         // admin.html과 동일한 키를 여기에 붙여넣어주세요.
         const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_PROJECT_ID.appspot.com",
-            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-            appId: "YOUR_APP_ID"
+            apiKey: "AIzaSyDd85t65S0F5sZSsiYCwQMSnmw0Jt3HlEg",
+            authDomain: "standupp-7cfeb.firebaseapp.com",
+            projectId: "standupp-7cfeb",
+            storageBucket: "standupp-7cfeb.firebasestorage.app",
+            messagingSenderId: "390358747706",
+            appId: "1:390358747706:web:aaec773c9d95397ea78303"
         };
         const isFirebaseReady = firebaseConfig.apiKey !== "YOUR_API_KEY";
         let db = null;
@@ -544,6 +566,53 @@
         }
 
         loadAndRenderCreators();
+
+        window.handleContactSubmit = async function(e) {
+            e.preventDefault();
+            const EMAILJS_SERVICE_ID = 'service_rab1y28';
+            const EMAILJS_TEMPLATE_ID = 'template_358fwjj';
+            const EMAILJS_PUBLIC_KEY = 'OfzE9v6hiHgQScofZ';
+            const CONTACT_RECEIVER_EMAIL = 'moocrew25@gmail.com';
+            
+            const name = document.getElementById('contactName').value.trim();
+            const email = document.getElementById('contactEmail').value.trim();
+            const platform = document.getElementById('contactPlatform').value.trim();
+            const message = document.getElementById('contactMessage').value.trim();
+            
+            const btn = document.getElementById('contactSubmitBtn');
+            btn.disabled = true;
+            btn.innerHTML = '전송 중...';
+            
+            try {
+                const response = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        service_id: EMAILJS_SERVICE_ID,
+                        template_id: EMAILJS_TEMPLATE_ID,
+                        user_id: EMAILJS_PUBLIC_KEY,
+                        template_params: {
+                            to_email: CONTACT_RECEIVER_EMAIL,
+                            from_name: name,
+                            from_email: email,
+                            platform: platform || '-',
+                            message: message,
+                            reply_to: email,
+                        },
+                    }),
+                });
+                
+                if(!response.ok) throw new Error('Network error');
+                alert('문의가 성공적으로 전송되었습니다. 확인 후 답변 드리겠습니다.');
+                document.getElementById('contactForm').reset();
+            } catch(error) {
+                console.error(error);
+                alert('전송 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '문의 보내기 <i class="fa-solid fa-paper-plane"></i>';
+            }
+        };
     </script>
 </body>
 </html>
