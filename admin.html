@@ -157,7 +157,7 @@
         if(isFirebaseReady) {
             const app = initializeApp(firebaseConfig);
             db = getFirestore(app);
-            artistsRef = doc(db, 'settings', 'artistsData');
+            artistsRef = doc(db, 'standup_sites', 'standupp3_artists_v2');
         }
 
         // --- State ---
@@ -376,16 +376,22 @@
                 if(el) target.works[i] = el.value || null;
             }
 
-            const success = await saveToFirebase();
+            const result = await saveToFirebase();
             renderList();
-            if(success) alert('저장되었습니다!');
-            else alert('Firebase 미설정 상태입니다. 필요시 JSON 다운로드를 이용하세요.');
+            if(result === true) alert('저장되었습니다!');
+            else alert('저장 실패: ' + result);
         };
 
         async function saveToFirebase() {
-            if (!isFirebaseReady || !artistsRef) return false;
-            try { await setDoc(artistsRef, { items: artists }, { merge: true }); return true; } 
-            catch(e) { console.error(e); return false; }
+            if (!isFirebaseReady || !artistsRef) return 'Firebase 설정이 필요합니다.';
+            try { 
+                await setDoc(artistsRef, { items: artists }, { merge: true }); 
+                return true; 
+            } 
+            catch(e) { 
+                console.error(e); 
+                return e.message || '알 수 없는 오류'; 
+            }
         }
 
         window.downloadJson = function() {

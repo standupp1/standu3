@@ -579,7 +579,7 @@
         if(isFirebaseReady) {
             const app = initializeApp(firebaseConfig);
             db = getFirestore(app);
-            artistsRef = doc(db, 'settings', 'artistsData');
+            artistsRef = doc(db, 'standup_sites', 'standupp3_artists_v2');
         }
 
         let loadedArtists = [];
